@@ -1,5 +1,4 @@
-pubs_*.json
-assignment_*.json
+*.json
 assignment_*.zip
 data/*.json
 features/*.h5
