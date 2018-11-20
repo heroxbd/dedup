@@ -3,3 +3,4 @@ assignment_*.json
 assignment_*.zip
 data/*.json
 features/*.h5
+*.ipynb
