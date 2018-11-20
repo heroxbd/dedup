@@ -1,5 +1,10 @@
 # data pipeline
 
+## 数据存放
+在根目录下建立data和features文件夹，分别存放原始数据和提好的feature。
+
+注意数据和feature文件的后缀都应包括在.gitignore内，避免上传到github
+
 ## 读入数据
 原始json文件存在data数据集下，直接读入data/*.json，根据要处理的域按顺序将信息提取到一个list中
 
