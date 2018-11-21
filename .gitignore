@@ -1,5 +1,5 @@
 *.json
-assignment_*.zip
+*.zip
 data/*.json
 features/*.h5
 *.ipynb
