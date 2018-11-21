@@ -28,7 +28,7 @@ datatrans <-function(i){
 
     abstract <- ldply(tmp1, function(x) 
         if ("abstract" %in% names(x)) {
-            as.data.frame(x[c('id','abstract')])
+            as.data.frame(Filter(Negate(is.null), x[c('id','abstract')]))
         })
 
     keywords <- ldply(tmp1, function(x) {
