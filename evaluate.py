@@ -14,6 +14,7 @@ def parse_args():
 
 def evaluate(input, names=None):
     '''
+    average over pairwise f1 under each name (standard pairwise f1 should be calculated under all names)
     input could be a list or a json filename, 
     names assign the names to calculate f1, default use all names
     assume that one paper only assign to one author within the same name
