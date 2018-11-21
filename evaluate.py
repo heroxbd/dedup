@@ -35,7 +35,6 @@ def evaluate(input, names=None, average='binary'):
     names assign the names to calculate f1, default use all names
     average: binary - pairwise f1 for positive samples only
              macro - mean f1 of positive and negative samples
-    assume that one paper only assign to one author within the same name
     '''
     if isinstance(input, str) and input.split('.')[-1] == 'json':
         pred = json.load(open(input))
@@ -70,19 +69,40 @@ def evaluate(input, names=None, average='binary'):
         # Create pairs classification of prediction
         pairs_pred = np.zeros((nb_papers, nb_papers), dtype=np.bool)
         # index papers in authors_pred
-        pp2auth = np.zeros(nb_papers, dtype=np.int32)
+        pp2auth = - np.ones(nb_papers, dtype=np.int32)
+        # if the same paper is assigned to two different authors, mark down first
+        pp2multi_auth = {}
         for i, paper in enumerate(papers_gt):
             for j, papers_pred in enumerate(authors_pred):
                 if paper in papers_pred:
-                    pp2auth[i] = j 
+                    if pp2auth[i] < 0:
+                        pp2auth[i] = j 
+                    else:
+                        if i in pp2multi_auth:
+                            pp2multi_auth[i].append(j)
+                        else:
+                            pp2multi_auth[i] = [j]
                     papers_pred.remove(paper)
-                    break
         # find papers with same author id, assign those elements in pairs_pred to be 1
         for auth in range(len(authors_pred)):
             auth_same = np.where(pp2auth == auth)[0]
             nb_auth_same = len(auth_same)
             pairs_pred[np.repeat(auth_same, nb_auth_same), 
                        np.tile(auth_same, nb_auth_same)] = 1
+        # deal with paper assigned to multi authors
+        for (paper_i, multi_auth) in pp2multi_auth.items():
+            for auth in multi_auth:
+                auth_same = np.where(pp2auth == auth)[0]
+                if paper_i in auth_same:
+                    continue
+                else:
+                    np.append(auth_same, paper_i)
+                for (paper_j, multi_auth_other) in pp2multi_auth.items():
+                    if auth in multi_auth_other:
+                        np.append(auth_same, paper_j)
+                nb_auth_same = len(auth_same)
+                pairs_pred[np.repeat(auth_same, nb_auth_same),
+                           np.tile(auth_same, nb_auth_same)] = 1
         # extract triu of pairs_gt and pairs_pred, then flatten
         pairs_gt = pairs_gt[np.triu_indices(nb_papers, 1)]
         pairs_pred = pairs_pred[np.triu_indices(nb_papers, 1)]
