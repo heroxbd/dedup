@@ -26,3 +26,26 @@ import h5py
 with h5py.File('features/your_feature_name.h5', 'w') as f:
     f['your_feature_name'] = feature
 ```
+
+## similarity的格式
+
+参考 `c_org.py`.  第一部分定义命令行的输入和输出：
+```
+#!/usr/bin/env python
+import argparse
+psr = argparse.ArgumentParser("baseline solution")
+psr.add_argument("-o", dest='opt', help="output")
+psr.add_argument('ipt', help="input")
+args = psr.parse_args()
+
+import pandas as pd, itertools as it, h5py, numpy as np
+```
+
+中间一部分由我们自行编写，其中 `pair` 的顺序由 `it.combinations(au.groupby('id'),2)` 决定。
+
+最后一部分定义了`hdf5`的输出。
+
+```
+with h5py.File(args.opt, 'w') as opt:
+    opt.create_dataset('c_{}'.format(args.field), data=x, compression="gzip", shuffle=True)
+```
