@@ -1,9 +1,10 @@
 assignment_validate.zip: assignment_validate.json
 	ln -sf $^ result.json
 	zip -9 $@ result.json
-# assignment_validate.json: pubs_validate.json
-#	./baseline.py $^ -o $@
-assignment_validate.json: pubs_validate.json
+data/stage_train.json: data/pubs_train.json
+	./baseline.py $^ -o $@
+
+data/assignment_validate.json: data/pubs_validate.json
 	./venue_bag.py $^ -o $@
 
 org_bag.zip: org_bag.json
