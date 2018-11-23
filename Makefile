@@ -1,3 +1,5 @@
+SHELL:=/bin/bash
+
 assignment_validate.zip: assignment_validate.json
 	ln -sf $^ result.json
 	zip -9 $@ result.json
