@@ -27,6 +27,10 @@ features/train/c_keywords/%.h5: data/train/keywords/%.csv
 	mkdir -p $(dir $@)
 	./c_org.py $^ -o $@ --field keywords
 
+features/train/label/%.h5: data/train/item/%.csv
+	mkdir -p $(dir $@)
+	./label.py $^ -o $@ --ref data/assignment_train.json
+
 # Delete partial files when the processes are killed.
 .DELETE_ON_ERROR:
 # Keep intermediate files around
