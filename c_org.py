@@ -7,6 +7,9 @@ psr.add_argument('--field', default='org', help="the field to count common entri
 args = psr.parse_args()
 
 import pandas as pd, itertools as it, h5py, numpy as np
+# ^^^ command line specification
+
+
 from collections import Counter
 au = pd.read_csv(args.ipt)
 
@@ -18,9 +21,10 @@ au = pd.read_csv(args.ipt)
 
 # this is expanded to be used with keywords as well
 
-dl = ((al[0], bl[0], sum((Counter(al[1]) & Counter(bl[1])).values()))
+dl = (sum((Counter(al[1]) & Counter(bl[1])).values())
       for (al, bl) in it.combinations(au.groupby('id')[args.field],2))
-x = np.array(list(dl), dtype=[('id1', 'S24'), ('id2', 'S24'), ('c_{}'.format(args.field), 'u2')])
+x = np.array(list(dl))
 
+# output .h5:
 with h5py.File(args.opt, 'w') as opt:
     opt.create_dataset('c_{}'.format(args.field), data=x, compression="gzip", shuffle=True)
