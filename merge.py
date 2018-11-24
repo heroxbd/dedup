@@ -10,6 +10,7 @@ args = psr.parse_args()
 with h5py.File(args.ipt[0]) as ipt:
     dtp = ipt[args.field].dtype
 
+cms = []
 with h5py.File(args.opt, "w") as raw:
     pair = raw.create_dataset(args.field, shape=(1e12,), dtype=dtp, compression="gzip", shuffle=True)
     p = 0
@@ -18,4 +19,6 @@ with h5py.File(args.opt, "w") as raw:
             s = ipt[args.field].size
             pair[p:p+s] = ipt[args.field]
             p += s
+            cms.append(p)
     pair.resize((p,))
+    raw.create_dataset("sep", data=cms, compression="gzip", shuffle=True)

@@ -44,12 +44,6 @@ features/train/$(1).h5: $$(train_names:%=features/train/$(1)/%.h5)
 endef
 $(foreach k,c_keywords c_org label,$(eval $(call merge-tpl,$(k))))
 
-features/train/idx.csv: $(train_names:%=features/train/c_keywords/%.h5)
-	for f in $^; do \
-		echo -n $$(basename --suffix=.h5 $$f) >> $@ \
-		python -c "import h5py; print(h5py.File($$f)['c_keywords'].size)" >> $@ \
-	done
-
 # Delete partial files when the processes are killed.
 .DELETE_ON_ERROR:
 # Keep intermediate files around
