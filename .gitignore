@@ -3,3 +3,4 @@
 data
 features
 *.ipynb
+train_names.mk
