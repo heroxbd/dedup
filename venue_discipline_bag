@@ -1,0 +1,32 @@
+library(stringr)
+library(dplyr)
+setwd("/Users/ZLab/Downloads")
+item <- read.csv('./aminer/item_final.csv')
+venue_words <- as.data.frame(unlist(str_split(item$venue,pattern = '[:blank:]'))) 
+names(venue_words) <- 'words'
+venue_words <- venue_words %>%
+        group_by(words) %>%
+        summarize(count=n()) %>%
+        arrange(desc(count))
+
+#write.csv(venue_words,file='venue_words.csv')
+
+phys_materirals <- c('Physics','Physical','Optical','Nuclear','Electronics','Materials','Cailiao','Optics','Particle',
+                     'Physica','Laser','Solid','Particles','Gravitation','Organic','Cosmology','Guangxue','Lasers',
+                     'Particles','Atomic','Lixue','Optoelectronics','Nanotechnology','Spectroscopy',
+                     'Chromatography','Radiology','Optica','Nano','Waves','Microwave','photonics','Superconductivity',
+                     'Photonica')
+chem <- c('Chemistry','Chemical','Molecular','Polymer','Biochemistry','Biochemical','Crystallographica','Crystal',
+          'Polymers','Crystals','Tetrahedron','Thermophysics','Petrochemical','Polymeric','Gaofenzi','Macromolecular')
+life_med <- c('Medical','Clinical','Medicine','Oncology','Biomedical','Genetics','Pharmaceutical','Biological',
+              'Cell','Microbiology','Biology','Biotechnology','Immunology','Ecology','Gastroenterology',
+              'Pharmacology','Neuroscience','Cellular','Ophthalmology','Medicinal','Surgery','Toxicology',
+              'Rehabilitation','Drugs','Pathology','Diseases','Health','Rehabilitative','Therapy','Biophysical',
+              'Zhongyao','Disease','Neurology','Digestology','Tumor','Pharmacological','Virology','Biomolecular',
+              'Dermatology','Biophysics','Surgical','Brain','Care','Herbal','Nutrition')
+info <- c('Computer','Information','Intelligence','Computing','Automation','Artificial','Electrical',
+           'Xitong','Computational','Intelligent','Dianli','Jisuanji','Zidonghua','Simulation','Dianji','Software',
+           'Kongzhi','Telecommunications','Computers','Dianzi','Circuits','Xinxi','Cybernetics','Semiconductor','Digital',
+          'Tongxin','Web','Network','Semiconductors')
+math <- c('Mathematics','Mathematical')
+environ <- c('Environment','Enviromental','Earth','Geoscience','Ecologica','Statistical')
