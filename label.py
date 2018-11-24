@@ -21,7 +21,7 @@ lm=at[nm]
 d = pd.concat([pd.DataFrame({"id":v, "seq":i}) for i, v in enumerate(lm)]).set_index('id')
 
 dl = (a==b for (a,b) in it.combinations(d.loc[iv].values, 2))
-x = np.array(list(dl))
+x = np.concatenate(list(dl))
 
 # output .h5:
 with h5py.File(args.opt, 'w') as opt:
