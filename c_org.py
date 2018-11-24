@@ -9,7 +9,6 @@ args = psr.parse_args()
 import pandas as pd, itertools as it, h5py, numpy as np
 # ^^^ command line specification
 
-
 from collections import Counter
 au = pd.read_csv(args.ipt)
 
@@ -23,7 +22,7 @@ au = pd.read_csv(args.ipt)
 
 dl = (sum((Counter(al[1]) & Counter(bl[1])).values())
       for (al, bl) in it.combinations(au.groupby('id')[args.field],2))
-x = np.array(list(dl))
+x = np.array(list(dl), dtype='u2')
 
 # output .h5:
 with h5py.File(args.opt, 'w') as opt:
