@@ -17,3 +17,5 @@ author <- author %>% mutate(name = str_replace_all(name,pattern = "[0-9]{4}|'|[0
                                                    replacement = ''),
                             org = str_replace_all(org,pattern = ",|/|'|-|:|\\(|\\)",replacement = ' '),
                             org = str_replace_all(org,pattern = "[:blank:]{2,}",replacement = ' ')) 
+write.csv(item,file='item.csv')
+write.csv(author,file='author.csv')
