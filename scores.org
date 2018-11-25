@@ -1,6 +1,7 @@
 * scores
-  | solutions         | train offline | validate online |
-  |-------------------+---------------+-----------------|
-  | all-in-1 baseline |         0.285 |           0.325 |
-  | venue bag         |         0.022 |           0.204 |
-  | org bag           |         0.031 |           0.340 |
+  | solutions         | train offline |       | validate online |
+  |                   |        binary | macro |                 |
+  |-------------------+---------------+-------+-----------------|
+  | all-in-1 baseline |         0.285 |       |           0.325 |
+  | venue bag         |         0.022 | 0.017 |           0.204 |
+  | org bag           |         0.031 | 0.021 |           0.340 |
