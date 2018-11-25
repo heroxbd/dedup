@@ -1,0 +1,18 @@
+install.packages('optrees')
+library(optrees)
+library(dplyr)
+arcs_org <- read.csv('similarity.csv')
+acrs_output <- arcs_org %>% mutate(edge=0)
+names(acrs_output) <- c('node1','node2','similarity','edge')
+arcs <- as.matrix(arcs_org)
+#transfer similarity to weight
+arcs[,3] <- 1-arcs[,3]
+nodes <- unique(arcs[,1])
+KKT <- getMinimumSpanningTree(nodes, arcs, algorithm = "Kruskal")
+result <- KKT$tree.arcs
+result_list <- list()
+for(i in 1: length(nodes)-1){
+        arcs_output <- arcs_output %>%
+                mutate(edge = if_else(node1==result$ept1[i]&node2==result$ept2[i],1,edge))
+        result_list[[i]] <- arcs_output
+}
