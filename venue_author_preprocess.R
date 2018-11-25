@@ -9,10 +9,10 @@ require(argparse)
 psr <- ArgumentParser(description="clean up the strings")
 psr$add_argument("ipt", help="input", nargs="+")
 psr$add_argument("-o", dest="opt", help="output")
-psr$add_argument("--field", help="field to manipulate")
+psr$add_argument("--field", default='item', help="field to manipulate")
 args <- psr$parse_args()
 
-dv <- read.csv(args$ipt)
+dv <- read.csv(args$ipt, row.names=1)
 
 if (args$field == 'itme') {
     dv <- dv %>% mutate(venue = str_replace_all(venue,pattern = "[0-9]{4}|'|[0-9]+th|[0-9]+nd|[0-9]+st|[0-9]+rd|\\.",

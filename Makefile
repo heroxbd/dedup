@@ -27,20 +27,29 @@ org_bag.zip: org_bag.json
 	ln -sf $^ result.json
 	zip -9 $@ result.json
 
-features/$(DS)/csv_flag: data/pubs_$(DS).json
-	mkdir -p $(dir $@)/{item0,author0,abstract,keywords}
+data/$(DS)/author0/%.csv: data/$(DS)/csv_flag
+	:
+data/$(DS)/item0/%.csv: data/$(DS)/csv_flag
+	:
+data/$(DS)/abstract/%.csv: data/$(DS)/csv_flag
+	:
+data/$(DS)/keywords/%.csv: data/$(DS)/csv_flag
+	:
+data/$(DS)/csv_flag: data/pubs_$(DS).json
+	mkdir -p $(dir $@){item0,author0,abstract,keywords}
 	./data_transfer.R $^ -o $(dir $@)
 	touch $@
 
-features/$(DS)/author0/%.csv: | features/$(DS)/csv_flag
-features/$(DS)/item0/%.csv: | features/$(DS)/csv_flag
-features/$(DS)/abstract/%.csv: | features/$(DS)/csv_flag
-features/$(DS)/keywords/%.csv: | features/$(DS)/csv_flag
+# for word2vec
+data/$(DS)/ia.csv: $($(DS)_names:%=data/$(DS)/item/%.csv) $($(DS)_names:%=data/$(DS)/abstract/%.csv)
+	./combine-at.R $($(DS)_names:%=data/$(DS)/item/%.csv) --abstract $($(DS)_names:%=data/$(DS)/abstract/%.csv) -o $@
 
-features/$(DS)/author/%.csv: features/$(DS)/author0/%.csv
-	./venue_author_preprocess.R $^ -o $@
-features/$(DS)/item/%.csv: features/$(DS)/item0/%.csv
-	./venue_author_preprocess.R $^ -o $@
+data/$(DS)/author/%.csv: data/$(DS)/author0/%.csv
+	mkdir -p $(dir $@)
+	./venue_author_preprocess.R $^ -o $@ --field author
+data/$(DS)/item/%.csv: data/$(DS)/item0/%.csv
+	mkdir -p $(dir $@)
+	./venue_author_preprocess.R $^ -o $@ --field item
 
 features/$(DS)/c_org/%.h5: data/$(DS)/author/%.csv
 	mkdir -p $(dir $@)
