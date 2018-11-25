@@ -44,9 +44,9 @@ datatrans <-function(i){
         d
     })
 
-    write.csv(item,file=paste0(args$opt,'/item/',disamau,'.csv'))
+    write.csv(item,file=paste0(args$opt,'/item0/',disamau,'.csv'))
     write.csv(abstract,file=paste0(args$opt,'/abstract/',disamau,'.csv'))
-    write.csv(author,file=paste0(args$opt,'/author/',disamau,'.csv'))
+    write.csv(author,file=paste0(args$opt,'/author0/',disamau,'.csv'))
     write.csv(keywords,file=paste0(args$opt,'/keywords/',disamau,'.csv'))
 }
 

@@ -24,14 +24,19 @@ org_bag.zip: org_bag.json
 	zip -9 $@ result.json
 
 features/$(DS)/csv_flag: data/pubs_$(DS).json
-	mkdir -p $(dir $@)/{item,author,abstract,keywords}
+	mkdir -p $(dir $@)/{item0,author0,abstract,keywords}
 	./data_transfer.R $^ -o $(dir $@)
 	touch $@
 
-features/$(DS)/author/%.csv: | features/$(DS)/csv_flag
-features/$(DS)/item/%.csv: | features/$(DS)/csv_flag
+features/$(DS)/author0/%.csv: | features/$(DS)/csv_flag
+features/$(DS)/item0/%.csv: | features/$(DS)/csv_flag
 features/$(DS)/abstract/%.csv: | features/$(DS)/csv_flag
 features/$(DS)/keywords/%.csv: | features/$(DS)/csv_flag
+
+features/$(DS)/author/%.csv: features/$(DS)/author0/%.csv
+	./venue_author_preprocess.R $^ -o $@
+features/$(DS)/item/%.csv: features/$(DS)/item0/%.csv
+	./venue_author_preprocess.R $^ -o $@
 
 features/$(DS)/c_org/%.h5: data/$(DS)/author/%.csv
 	mkdir -p $(dir $@)
