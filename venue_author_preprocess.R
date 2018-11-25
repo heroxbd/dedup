@@ -14,6 +14,7 @@ author <- author %>% mutate(name = str_replace_all(name,pattern = "[0-9]{4}|'|[0
                             name = str_replace_all(name,pattern = ",|/|'|-|:|\\(|\\)",replacement = ' '),
                             name = str_replace_all(name,pattern = "[:blank:]{2,}",replacement = ' '),
                             name = str_replace_all(name,pattern = "^[:blank:]+",replacement = ''),
+                            name = tolower(name),
                             org = str_replace_all(org,pattern = "[0-9]{4}|'|[0-9]+th|[0-9]+nd|[0-9]+st|[0-9]+rd|\\.",
                                                   replacement = ''),
                             org = str_replace_all(org,pattern = ",|/|'|-|:|\\(|\\)",replacement = ' '),
