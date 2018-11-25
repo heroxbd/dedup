@@ -1,6 +1,7 @@
 install.packages('optrees')
 library(optrees)
 library(dplyr)
+library(igraph)
 arcs_org <- read.csv('similarity.csv')
 acrs_output <- arcs_org %>% mutate(edge=0)
 names(acrs_output) <- c('node1','node2','similarity','edge')
@@ -11,8 +12,21 @@ nodes <- unique(arcs[,1])
 KKT <- getMinimumSpanningTree(nodes, arcs, algorithm = "Kruskal")
 result <- KKT$tree.arcs
 result_list <- list()
+
 for(i in 1: length(nodes)-1){
-        arcs_output <- arcs_output %>%
-                mutate(edge = if_else(node1==result$ept1[i]&node2==result$ept2[i],1,edge))
-        result_list[[i]] <- arcs_output
+        acrs_result <- acrs_output
+        result_node <- result[1:i]
+        node <- unique(c(result_node$ept1,result_node$ept2))
+        v <- data.frame(name = node)
+        e <- data.frame(from = result_node$ept1,
+                        to = result_node$ept2)
+        g <- graph_from_data_frame(e, directed=F, vertices=v)
+        cluster <- components(g)$membership
+        for(j in 1 : length(cluster)){
+                arcs_result <- arcs_result %>%
+                        mutate(edge = if_else(node1 %in% cluster[[i]] & 
+                                                      node2 %in% cluster[[i]],1,edge))
+        }
+        result_list[[i]] <- arcs_result
 }
+save(result.list, file = "result_list.RData")
