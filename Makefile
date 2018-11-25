@@ -23,7 +23,7 @@ data/%.score: data/%.json
 data/%.pdf: data/%.score
 	./pscore.R $^ -o $@ > $@.log
 
-org_bag.zip: org_bag.json
+data/%.zip: data/%.json
 	ln -sf $^ result.json
 	zip -9 $@ result.json
 
