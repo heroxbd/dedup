@@ -70,20 +70,23 @@ import networkx as nx
 G=nx.Graph()
 G.add_nodes_from(MisNodes)
 G.add_edges_from(list(Mislinks[['source', 'target']].to_records(index=False)))
-
+graphs = list(nx.connected_component_subgraphs(G))
 
 
 x = np.array(())
-for (al, bl) in it.combinations(data['id'],2):
-    try:
-        m = 1/nx.shortest_path_length(G, source=al, target=bl, weight=None)
+for (al, bl) in it.combinations(np.unique(data['id']),2):
+    i1 = [i1 for i1 in range(len(graphs)) if al in graphs[i1]]
+    i2 = [i2 for i2 in range(len(graphs)) if bl in graphs[i2]]
+    if i1==i2 and i1 != []:
+        m = 1/nx.shortest_path_length(graphs[i1[0]], source=al, target=bl, weight=None)
         x = np.append(x,m)
-    except:
+    else:
         x = np.append(x,0)
 
 
 # output .h5:
 with h5py.File(args.opt, 'w') as opt:
     opt.create_dataset('shortpath', data=x, compression="gzip", shuffle=True)
+
 
 
