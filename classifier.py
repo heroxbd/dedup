@@ -66,6 +66,7 @@ def loaders(args, split):
             label = f['label'][:]
             sep = f['sep'][:]
             sep = np.concatenate([[0], sep])
+        assert data.shape[0] == label.shape[0], 'lengths of feature and label not equal'
         names_trainset = json.load(open('data/assignment_train.json'))
         names_trainset = sorted(names_trainset.keys())
         index = []
@@ -103,7 +104,6 @@ def loaders(args, split):
         print('Feature size: %d, %d' % data.shape)
         label = None
 
-    assert data.shape[0] == label.shape[0], 'lengths of feature and label not equal'
     return data, label
 
 
