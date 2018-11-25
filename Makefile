@@ -18,6 +18,10 @@ data/venue_bag_$(DS).json: data/pubs_$(DS).json
 	./venue_bag.py $^ -o $@
 data/org_bag_${DS}.json: data/${DS}/author
 	./org_bag.py $^ -o $@
+data/%.score: data/%.json
+	parallel python evaluate.py $^ --names {} ::: $($(DS)_names) > $@
+data/%.pdf: data/%.score
+	./pscore.R $^ -o $@ > $@.log
 
 org_bag.zip: org_bag.json
 	ln -sf $^ result.json

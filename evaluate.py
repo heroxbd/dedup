@@ -8,7 +8,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Evaluate train f1 score')
 
     parser.add_argument('input', type=str, help='predicion filename')
-    parser.add_argument('--names', type=str, default='', help='names to calculate f1')
+    parser.add_argument('--names', type=str, nargs='+', default=None, help='names to calculate f1')
     parser.add_argument('--average', type=str, default='binary', help='manner to calculate f1')
     args = parser.parse_args()
 
@@ -41,7 +41,8 @@ def evaluate(input, names=None, average='binary'):
     else:
         assert isinstance(input, list), 'input must be a list or a json filename'
 
-    print('Evaluation starts with %s manner.' % average)
+    if args.names is None:
+        print('Evaluation starts with %s manner.' % average)
     time_start = time.time()
     # Load gt file
     label = json.load(open('data/assignment_train.json'))
@@ -140,13 +141,15 @@ def evaluate(input, names=None, average='binary'):
     else:
         raise ValueError('manner %s not implemented' % average)
 
-    print('Evaluation takes %.2fs' % (time.time() - time_start))
+    if args.names is None:
+        print('Evaluation takes %.2fs' % (time.time() - time_start))
     return f1
 
 
 if __name__ == '__main__':
     args = parse_args()
-    if len(args.names) == 0:
-        args.names = None
     f1 = evaluate(args.input, args.names, args.average)
-    print('f1 score on train set: %.6f' % f1)
+    if args.names is None:
+        print('f1 score on train set: %.6f' % f1)
+    else:
+        print('{},{:.3f}'.format(','.join(args.names), f1))
