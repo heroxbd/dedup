@@ -43,6 +43,11 @@ data/$(DS)/csv_flag: data/pubs_$(DS).json
 # for word2vec
 data/$(DS)/ia.csv: $($(DS)_names:%=data/$(DS)/item/%.csv) $($(DS)_names:%=data/$(DS)/abstract/%.csv)
 	./combine-at.R $($(DS)_names:%=data/$(DS)/item/%.csv) --abstract $($(DS)_names:%=data/$(DS)/abstract/%.csv) -o $@
+data/$(DS)/uniglue/%.csv: data/$(DS)/item/%.csv data/$(DS)/author/%.csv
+	mkdir -p $(dir $@)
+	./uni_glue_baseline.R $< --author $(word 2,$^) -o $@
+data/uni_glue_${DS}.json: $($(DS)_names:%=data/$(DS)/uniglue/%.csv)
+	./org_bag.py $^ -o $@ --field uniglue
 
 data/$(DS)/author/%.csv: data/$(DS)/author0/%.csv
 	mkdir -p $(dir $@)
