@@ -105,3 +105,9 @@ http://dpcg.d.airelinux.org:8000/edit/dedup/features/train/c_keywords.h5
 http://dpcg.d.airelinux.org:8000/edit/dedup/features/train/c_org.h5
 http://dpcg.d.airelinux.org:8000/edit/dedup/features/train/label.h5
 ```
+
+### 第三步：训练分类器
+执行命令``python classifier.py``
+
+其中可选参数见``parse_args()``函数，
+建议早期使用``--nb_samples=1000``，即用于训练和验证的样本量为1000，来调试代码保证跑通
