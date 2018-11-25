@@ -1,16 +1,17 @@
 SHELL:=/bin/bash
-# data/pubs_train.json
--include train_names.mk
-ifndef train_names
-train_names:=$(shell jq -r 'keys[]' < data/pubs_train.json)
-train_names.mk:
-	echo 'train_names:=$(train_names)' > $@
+DS:=train
+# data/pubs_$(DS).json
+-include $(DS)_names.mk
+ifndef $(DS)_names
+$(DS)_names:=$(shell jq -r 'keys[]' < data/pubs_$(DS).json)
+$(DS)_names.mk:
+	echo '$(DS)_names:=$($(DS)_names)' > $@
 endif
 
 assignment_validate.zip: assignment_validate.json
 	ln -sf $^ result.json
 	zip -9 $@ result.json
-data/stage_train.json: data/pubs_train.json
+data/stage_$(DS).json: data/pubs_$(DS).json
 	./baseline.py $^ -o $@
 
 data/assignment_validate.json: data/pubs_validate.json
@@ -22,24 +23,30 @@ org_bag.zip: org_bag.json
 org_bag.json: data/validate/author
 	./org_bag.py $^ -o $@
 
-data/train: data/pubs_train.json
-	mkdir -p $@/{item,author,abstract,keywords}
-	./data_transfer.R $^ -o $@
+features/$(DS)/csv_flag: data/pubs_$(DS).json
+	mkdir -p $(dir $@)/{item,author,abstract,keywords}
+	./data_transfer.R $^ -o $(dir $@)
+	touch $@
 
-features/train/c_org/%.h5: data/train/author/%.csv
+features/$(DS)/author/%.csv: | features/$(DS)/csv_flag
+features/$(DS)/item/%.csv: | features/$(DS)/csv_flag
+features/$(DS)/abstract/%.csv: | features/$(DS)/csv_flag
+features/$(DS)/keywords/%.csv: | features/$(DS)/csv_flag
+
+features/$(DS)/c_org/%.h5: data/$(DS)/author/%.csv
 	mkdir -p $(dir $@)
 	./c_org.py $^ -o $@
 
-features/train/c_keywords/%.h5: data/train/keywords/%.csv
+features/$(DS)/c_keywords/%.h5: data/$(DS)/keywords/%.csv
 	mkdir -p $(dir $@)
 	./c_org.py $^ -o $@ --field keywords
 
-features/train/label/%.h5: data/train/item/%.csv
+features/$(DS)/label/%.h5: data/$(DS)/item/%.csv
 	mkdir -p $(dir $@)
-	./label.py $^ -o $@ --ref data/assignment_train.json
+	./label.py $^ -o $@ --ref data/assignment_$(DS).json
 
 define merge-tpl
-features/train/$(1).h5: $$(train_names:%=features/train/$(1)/%.h5)
+features/$(DS)/$(1).h5: $$($(DS)_names:%=features/$(DS)/$(1)/%.h5)
 	./merge.py $$^ -o $$@ --field $(1)
 endef
 $(foreach k,c_keywords c_org label,$(eval $(call merge-tpl,$(k))))
