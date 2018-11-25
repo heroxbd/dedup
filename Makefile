@@ -14,14 +14,14 @@ assignment_validate.zip: assignment_validate.json
 data/stage_$(DS).json: data/pubs_$(DS).json
 	./baseline.py $^ -o $@
 
-data/assignment_validate.json: data/pubs_validate.json
+data/venue_bag_$(DS).json: data/pubs_$(DS).json
 	./venue_bag.py $^ -o $@
+data/org_bag_${DS}.json: data/${DS}/author
+	./org_bag.py $^ -o $@
 
 org_bag.zip: org_bag.json
 	ln -sf $^ result.json
 	zip -9 $@ result.json
-org_bag.json: data/validate/author
-	./org_bag.py $^ -o $@
 
 features/$(DS)/csv_flag: data/pubs_$(DS).json
 	mkdir -p $(dir $@)/{item,author,abstract,keywords}
