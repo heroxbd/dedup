@@ -12,8 +12,13 @@ import itertools as it
 from matplotlib import pylab as plt
 import h5py
 
-os.chdir('D:/jike paradis')
-data = pd.read_csv('./data/bin_yu.csv')
+import argparse
+psr = argparse.ArgumentParser("baseline solution")
+psr.add_argument("-o", dest='opt', help="output")
+psr.add_argument('ipt', help="author input")
+args = psr.parse_args()
+
+data = pd.read_csv(args.ipt)
 
 wname =  pd.value_counts(data['name'])
 name = wname.index
@@ -21,37 +26,18 @@ wid =  pd.value_counts(data['id'])
 id = wid.index
 
 MisNodename = pd.DataFrame({'node':name,'weight':wname})
-MisNodename = MisNodename.drop('Bin Yu')
+MisNodename = MisNodename.drop('bin yu')
 MisNodeID = pd.DataFrame({'node':id,'weight':wid})
 MisNodes = MisNodename.append(MisNodeID)
 
 Mislinks = pd.DataFrame(columns=['source','target','weight'])
 namelist = dict(list(data.groupby('name')))
-del(namelist['Bin Yu'])
-
-
-namelist100 = dict(list(data.groupby('name'))[0:100])
-del(namelist100['Bin Yu'])
+del(namelist['bin yu'])
 
 for name0 in namelist.keys():
     paperlist = namelist.get(name0)
     linklist1 = pd.DataFrame({'source':paperlist['id'],'target':name0,'weight':1})
     Mislinks = Mislinks.append(linklist1)
-
-'''
-for name1 in namelist100.keys():
-    for name2 in namelist100.keys():
-        conum = 0
-        i = 0
-        if (name1 < name2):
-            conum = len([i for i in namelist.get(name1)['id'].values if i in namelist.get(name2)['id'].values])
-            if conum!= 0:
-                linklist2 = np.array((name1,name2,conum))
-                i = i+1
-                Mislinks.loc[i] = linklist2
-                #Mislinks = Mislinks.append(linklist2,ignore_index=True)          
-'''
-
 
 end = 0
 for i in range(len(data)):
@@ -72,7 +58,6 @@ G.add_nodes_from(MisNodes)
 G.add_edges_from(list(Mislinks[['source', 'target']].to_records(index=False)))
 graphs = list(nx.connected_component_subgraphs(G))
 
-
 x = np.array(())
 for (al, bl) in it.combinations(np.unique(data['id']),2):
     i1 = [i1 for i1 in range(len(graphs)) if al in graphs[i1]]
@@ -83,10 +68,6 @@ for (al, bl) in it.combinations(np.unique(data['id']),2):
     else:
         x = np.append(x,0)
 
-
 # output .h5:
 with h5py.File(args.opt, 'w') as opt:
     opt.create_dataset('shortpath', data=x, compression="gzip", shuffle=True)
-
-
-
