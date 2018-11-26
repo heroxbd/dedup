@@ -43,6 +43,7 @@ def parse_args():
 
 
 def loaders(args, split):
+    print('Loading features')
     # Load features
     if len(args.feature_ids) == 0:
         feat_file_list = glob.glob('features/train/c_*.h5')
@@ -50,7 +51,9 @@ def loaders(args, split):
     else:
         feat_file_list = ['features/train/c_' + f + '.h5' for f in args.feature_ids]
         args.feature_ids = ['c_' + f for f in args.feature_ids]
+    print('Using features: ' + ' '.join(args.feature_ids))
     data = []
+    sep_data = None
     for feat_id, feat_file in zip(args.feature_ids, feat_file_list):
         with h5py.File(feat_file, 'r') as f:
             feat = f[feat_id][:]
@@ -58,15 +61,21 @@ def loaders(args, split):
             if len(feat.shape) == 1:
                 feat = feat[:, np.newaxis]
             data.append(feat)
+            if sep_data is None:
+                sep_data = f['sep'][:]
+            else:
+                assert np.all(sep_data == f['sep'][:]), 'sep of %s not the same with previous seps' % feat_id
     data = np.concatenate(data, axis=1)
 
     # For train_val, load labels
     if split == 'train_val':
+        print('Loading labels')
         with h5py.File('features/train/label.h5', 'r') as f:
             label = f['label'][:]
             sep = f['sep'][:]
-            sep = np.concatenate([[0], sep])
         assert data.shape[0] == label.shape[0], 'lengths of feature and label not equal'
+        assert np.all(sep == sep_data), 'sep of label not the same with sep of features'
+        sep = np.concatenate([[0], sep])
         names_trainset = json.load(open('data/assignment_train.json'))
         names_trainset = sorted(names_trainset.keys())
         index = []
@@ -83,34 +92,46 @@ def loaders(args, split):
             name_split = {'train':names_train, 'val':names_val}
             with open(args.name_split_file, 'w') as f:
                 json.dump(name_split, f)
-    
+
         # Split data into train and val
         index_train = [np.arange(ind['start'], ind['end']) for ind in index if ind['name'] in names_trainset]
         index_train = np.concatenate(index_train)
         index_val = [np.arange(ind['start'], ind['end']) for ind in index if ind['name'] in names_val]
         index_val = np.concatenate(index_val)
-        # Resample
+        # Resample, #train = #val
         if args.nb_samples > 0:
             if args.nb_samples < len(index_train):
-                index_train = np.random.choice(index_train, args.nb_samples)
+                index_train_pos = np.random.choice(index_train[label[index_train] == 1], args.nb_samples / 2)
+                index_train_neg = np.random.choice(index_train[label[index_train] == 0], args.nb_samples - args.nb_samples / 2)
+                index_train = np.concatenate((index_train_pos, index_train_neg))
             if args.nb_samples < len(index_val):
-                index_val = np.random.choice(index_val, args.nb_samples)
+                index_val_pos = np.random.choice(index_val[label[index_val] == 1], args.nb_samples / 2)
+                index_val_neg = np.random.choice(index_val[label[index_val] == 0], args.nb_samples - args.nb_samples / 2)
+                index_val = np.concatenate((index_val_pos, index_val_neg))
         data = OrderedDict((('train', data[index_train]), ('val', data[index_val])))
         label = OrderedDict((('train', label[index_train]), ('val', label[index_val])))
-        print('Feature size: train (%d, %d), val (%d, %d)' % (data['train'].shape, data['val'].shape))
+        print('Feature size: train ' + str(data['train'].shape) + ', val ' + str(data['val'].shape))
         print('Label size: train %d, val %d' % (len(label['train']), len(label['val'])))
-
     else:
         print('Feature size: %d, %d' % data.shape)
-        label = None
 
-    return data, label
+    if args.predict:
+        if split == 'train_val':
+            sep = sep[1:]
+            sep = sep[len(names_train):] - sep[len(names_train)]
+            data = data['val']
+        else:
+            sep = sep_data
+        return data, sep
+    else:
+        return data, label
 
 
 def train(args):
     ''' 
     TODO:
     how to mine hard data: read adaboost
+    ensemble several random forests
     '''
     # Load data
     data, label = loaders(args, 'train_val')
@@ -143,19 +164,21 @@ def train(args):
         model.fit(data_train, label_train)
         print('Training finished. %.2fs passed' % (time.time() - time_start))
         # validate
-        pred_val = model.predict(data_val)
-        f1[model_id] = f1_score(label_val, pred_val, average='binary')
+        pred_val = model.predict_proba(data_val)[:, 1][:, np.newaxis]
+        f1[model_id] = f1_score(label_val, pred_val > 0.5, average='binary')
         print('F1 score: %.6f' % f1[model_id])
         # for ensemble
-        preds.append(model.predict_proba(data_val))
+        preds.append(pred_val)
         # save model
         joblib.dump(model, model_filename)
         print('Model saved to ' + model_filename)
 
     # Ensemble
+    if len(args.model_ids) < 2:
+        return
     preds = np.concatenate(preds, axis=1)
     if args.ensemble == 'mean':
-        preds = (preds.mean(axis=0) > 0.5)
+        preds = (preds.mean(axis=1) > 0.5)
     else:
         raise ValueError('ensemble strategy %s not implemented' % args.ensemble)
     print('ensemble %s F1 score: %.6f' % (args.ensemble, f1_score(label_val, preds, average='binary')))
@@ -163,21 +186,25 @@ def train(args):
 
 def evaluate(args):
     # Load data
+    args.nb_samples = -1 # no resampling in evaluation
     data, label = loaders(args, 'train_val')
     data, label = data['val'], label['val']
 
     # Eval
+    print('Evaluation starts')
     preds = []
     for model_id in args.model_ids:
         model_filename = osp.join('models', model_id + '.model')
         model = joblib.load(model_filename)
-        pred = model.predict(data)
-        print('%s f1 score: %.6f' % (model_id, f1_score(label, pred, average='binary')))
-        preds.append(model.predict_proba(data))
+        pred = model.predict_proba(data)[:, 1][:, np.newaxis]
+        print('%s f1 score: %.6f' % (model_id, f1_score(label, pred > 0.5, average='binary')))
+        preds.append(pred)
     # Ensemble
+    if len(args.model_ids) < 2:
+        return
     preds = np.concatenate(preds, axis=1)
     if args.ensemble == 'mean':
-        preds = (preds.mean(axis=0) > 0.5)
+        preds = (preds.mean(axis=1) > 0.5)
     else:
         raise ValueError('ensemble strategy %s not implemented' % args.ensemble)
     print('ensemble %s F1 score: %.6f' % (args.ensemble, f1_score(label, preds, average='binary')))
@@ -185,26 +212,33 @@ def evaluate(args):
 
 def predict(args):
     # Load data
-    data, _ = loaders(args, args.predict_split)
+    args.nb_samples = -1 # no resampling in prediction
+    data, sep = loaders(args, args.predict_split)
 
     # Predict
+    print('Prediction starts')
     preds = []
     for model_id in args.model_ids:
         model_filename = osp.join('models', model_id + '.model')
         model = joblib.load(model_filename)
-        preds.append(model.predict_proba(data))
+        preds.append(model.predict_proba(data)[:, 1][:, np.newaxis])
     # Ensemble
-    preds = np.concatenate(preds, axis=1)
-    if args.ensemble == 'mean':
-        preds = (preds.mean(axis=0) > 0.5)
+    if len(args.model_ids) >= 2:
+        preds = np.concatenate(preds, axis=1)
+        if args.ensemble == 'mean':
+            preds = (preds.mean(axis=1) > 0.5)
+        else:
+            raise ValueError('ensemble strategy %s not implemented' % args.ensemble)
     else:
-        raise ValueError('ensemble strategy %s not implemented' % args.ensemble)
+        preds = (preds.mean(axis=1) > 0.5)
     # Path to save result
     if not osp.exists('output'):
         os.makedirs('output')
     predict_file = osp.join('output', 'classifier_output_' + args.predict_split + '.h5')
     with h5py.File(predict_file, 'w') as f:
         f.create_dataset('prediction', data=preds, compression="gzip", shuffle=True)
+        f.create_dataset('sep', data=sep, compression="gzip", shuffle=True)
+    print('Prediction saved to ' + predict_file)
 
 
 if __name__ == '__main__':

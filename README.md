@@ -33,7 +33,7 @@ with h5py.File(args.opt, 'w') as opt:
 ## 安装依赖
 具体R和python在windows下的安装方式可以百度
 ### 安装R
-以及以下R的库：argparse，rjson，plyr，doMC
+以及以下R的库：argparse，rjson，plyr，doMC，stringr, dplyr
 
 附服务器linux下安装步骤
 + 命令行下执行命令    
@@ -107,7 +107,15 @@ http://dpcg.d.airelinux.org:8000/edit/dedup/features/train/label.h5
 ```
 
 ### 第三步：训练分类器
-执行命令``python classifier.py``
+执行命令``python classifier.py``即可训练分类器。
 
 其中可选参数见``parse_args()``函数，
-建议早期使用``--nb_samples=1000``，即用于训练和验证的样本量为1000，来调试代码保证跑通
+建议早期使用``--nb_samples=100000``，即用于训练和验证的样本量为100000，来调试代码保证跑通。在特征数量为2，样本量为100,000时，训练一次大约1分钟（读入数据耗时一半），且f1 score与样本量10,000,000无差异，在0.23左右。
+
+训练过程中，会按4:1的比例将训练集划分为train和val（代码用train_val表示训练集中的val部分，val表示没有label的validate集），划分结果保存在data/split_1fold.json中，后续的author assignment的训练应在train_val集上进行，调用evaluate函数时可通过names参数传入train_val集的所有名字，使得f1 score只在train_val集上计算。
+
+默认的分类器包括RandomForest和XGBoost，默认的ensemble方法为直接平均两个分类器的预测概率（一般情况下会比单一分类器的结果有所提升），分类器训练出的模型存在models文件夹。
+
+如果需要评价当前训练模型在train的val split上的分类效果，执行``python classifier.py --eval``即会输出每个分类器及ensemble后的f1 score。
+
+如果需要用当前训练的模型进行分类预测，执行``python classifier.py --predict --predict_split train_val``其中predict_split暂时可选train（整个训练集）, train_val（仅训练集中的val部分），则会将预测结果保存到output/classifier_output_split.h5，其中'prediction'域保存结果，'sep'域保存每个名字的分界点。
