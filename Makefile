@@ -39,6 +39,9 @@ data/$(DS)/csv_flag: data/pubs_$(DS).json
 	mkdir -p $(dir $@){item0,author0,abstract,keywords}
 	./data_transfer.R $^ -o $(dir $@)
 	touch $@
+data/$(DS)/dual/%.csv: data/$(DS)/author/%.csv
+	mkdir -p $(dir $@)
+	./dual_marry.py $^ -o $@
 
 # for word2vec
 data/$(DS)/ia.csv: $($(DS)_names:%=data/$(DS)/item/%.csv) $($(DS)_names:%=data/$(DS)/abstract/%.csv)
@@ -77,7 +80,7 @@ features/$(DS)/c_venue/%.h5: data/$(DS)/item/%.csv
 	mkdir -p $(dir $@)
 	./c_org.py $^ -o $@ --field venue
 
-features/$(DS)/c_venue/%.h5: data/$(DS)/item/%.csv
+features/$(DS)/diff_year/%.h5: data/$(DS)/item/%.csv
 	mkdir -p $(dir $@)
 	./diff_year.py $^ -o $@ --field year
 
