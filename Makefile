@@ -46,6 +46,10 @@ data/$(DS)/dual/%.csv: data/$(DS)/author/%.csv
 # for word2vec
 data/$(DS)/ia.csv: $($(DS)_names:%=data/$(DS)/item/%.csv) $($(DS)_names:%=data/$(DS)/abstract/%.csv)
 	./combine-at.R $($(DS)_names:%=data/$(DS)/item/%.csv) --abstract $($(DS)_names:%=data/$(DS)/abstract/%.csv) -o $@
+
+features/d2v_singlet.model: data/train/ia.csv
+	python doc2vec.py -i $^ -o $@
+
 data/$(DS)/uniglue/%.csv: data/$(DS)/item/%.csv data/$(DS)/author/%.csv
 	mkdir -p $(dir $@)
 	./uni_glue_baseline.R $< --author $(word 2,$^) -o $@
