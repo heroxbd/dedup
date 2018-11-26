@@ -16,7 +16,6 @@ args = psr.parse_args()
 import pandas as pd, itertools as it, h5py, numpy as np
 # ^^^ command line specification
 
-from collections import Counter
 au = pd.read_csv(args.ipt)
 
 
@@ -29,11 +28,15 @@ au = pd.read_csv(args.ipt)
 # this is expanded to be used with keywords as well
 maxyear = max(au[args.field])
 minyear = min(au[args.field])
+idlist = np.unique(au['id'])
 
-dl = (abs(al[1]-bl[1])/(maxyear-minyear)  
-    for (al, bl) in it.combinations(au.groupby('id')[args.field],2))
-x = np.array(list(dl), dtype='u2')
+for (aid, bid) in it.combinations(idlist,2):
+    ayear = np.array((au[au['id']==aid]['year']))[0]
+    byear = np.array((au[au['id']==bid]['year']))[0]
+    difflist = abs(ayear-byear)/(maxyear-minyear) 
+
+x = np.array(list(difflist), dtype='u2')
 
 # output .h5:
 with h5py.File(args.opt, 'w') as opt:
-    opt.create_dataset('c_{}'.format(args.field), data=x, compression="gzip", shuffle=True)
+    opt.create_dataset('diff year', data=x, compression="gzip", shuffle=True)
