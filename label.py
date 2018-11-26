@@ -12,8 +12,6 @@ args = psr.parse_args()
 
 import pandas as pd, itertools as it, h5py, numpy as np, json, os
 
-iv = pd.read_csv(args.ipt)['id'].unique()
-
 # Implicit assumption: infer name from input filename.
 nm = os.path.basename(args.ipt).replace(".csv", "")
 at=json.load(open(args.ref))
