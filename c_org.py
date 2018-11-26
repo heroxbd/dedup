@@ -20,16 +20,14 @@ au = pd.read_csv(args.ipt)
 
 # this is expanded to be used with keywords as well
 
-dl = (sum((Counter(al[1]) & Counter(bl[1])).values())
+dl = ((sum((Counter(al[1]) & Counter(bl[1])).values()), len(al[1])+len(bl[1]))
       for (al, bl) in it.combinations(au.groupby('id')[args.field],2))
 x = np.array(list(dl), dtype='u2')
-y = 1*(x!=0)
 
-df = pd.DataFrame({'overlap':x,'share_dummy':y})
+df = pd.DataFrame({'{}_overlap'.format(args.field): x[:,0], 
+                   '{}_ratio'.format(args.field): x[:,0]/(x[:,1]-x[:,0]),
+                   '{}_share_dummy'.format(args.field): x[:,0]!=0})
 
 # output .h5:
 with h5py.File(args.opt, 'w') as opt:
-    opt.create_dataset('c_{}'.format(args.field), data=df, compression="gzip", shuffle=True)
-
-
-
+    opt.create_dataset('c_{}'.format(args.field), data=df.to_records(index=False), compression="gzip", shuffle=True)
