@@ -70,6 +70,10 @@ features/$(DS)/shortpath/%.h5: data/$(DS)/author/%.csv
 	mkdir -p $(dir $@)
 	python ./shortpath_feature.py $< -o $@
 
+#features/$(DS)/c_authorFN/%.h5: data/$(DS)/author/%.csv
+#	mkdir -p $(dir $@)
+#	./c_org.py $< -o $@ --field authorFN
+
 features/$(DS)/c_org/%.h5: data/$(DS)/author/%.csv
 	mkdir -p $(dir $@)
 	./c_org.py $^ -o $@
