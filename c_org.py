@@ -23,7 +23,13 @@ au = pd.read_csv(args.ipt)
 dl = (sum((Counter(al[1]) & Counter(bl[1])).values())
       for (al, bl) in it.combinations(au.groupby('id')[args.field],2))
 x = np.array(list(dl), dtype='u2')
+y = 1*(x!=0)
+
+df = pd.DataFrame({'overlap':x,'share_dummy':y})
 
 # output .h5:
 with h5py.File(args.opt, 'w') as opt:
-    opt.create_dataset('c_{}'.format(args.field), data=x, compression="gzip", shuffle=True)
+    opt.create_dataset('c_{}'.format(args.field), data=df, compression="gzip", shuffle=True)
+
+
+
