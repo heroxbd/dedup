@@ -56,6 +56,10 @@ data/$(DS)/item/%.csv: data/$(DS)/item0/%.csv
 	mkdir -p $(dir $@)
 	./venue_author_preprocess.R $^ -o $@ --field item
 
+features/$(DS)/shortpath/%.h5: data/$(DS)/author/%.csv
+	mkdir -p $(dir $@)
+	python ./shortpath_feature.py $< -o $@
+
 features/$(DS)/c_org/%.h5: data/$(DS)/author/%.csv
 	mkdir -p $(dir $@)
 	./c_org.py $^ -o $@
@@ -72,7 +76,7 @@ define merge-tpl
 features/$(DS)/$(1).h5: $$($(DS)_names:%=features/$(DS)/$(1)/%.h5)
 	./merge.py $$^ -o $$@ --field $(1)
 endef
-$(foreach k,c_keywords c_org label,$(eval $(call merge-tpl,$(k))))
+$(foreach k,c_keywords c_org shortpath label,$(eval $(call merge-tpl,$(k))))
 
 # Delete partial files when the processes are killed.
 .DELETE_ON_ERROR:

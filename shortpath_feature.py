@@ -26,13 +26,14 @@ wid =  pd.value_counts(data['id'])
 id = wid.index
 
 MisNodename = pd.DataFrame({'node':name,'weight':wname})
-MisNodename = MisNodename.drop('bin yu')
+an = os.path.basename(args.ipt)[:-4].replace('_', ' ')
+MisNodename = MisNodename.drop(an)
 MisNodeID = pd.DataFrame({'node':id,'weight':wid})
 MisNodes = MisNodename.append(MisNodeID)
 
 Mislinks = pd.DataFrame(columns=['source','target','weight'])
 namelist = dict(list(data.groupby('name')))
-del(namelist['bin yu'])
+del(namelist[an])
 
 for name0 in namelist.keys():
     paperlist = namelist.get(name0)
@@ -58,15 +59,15 @@ G.add_nodes_from(MisNodes)
 G.add_edges_from(list(Mislinks[['source', 'target']].to_records(index=False)))
 graphs = list(nx.connected_component_subgraphs(G))
 
-x = np.array(())
+x = []
 for (al, bl) in it.combinations(np.unique(data['id']),2):
     i1 = [i1 for i1 in range(len(graphs)) if al in graphs[i1]]
     i2 = [i2 for i2 in range(len(graphs)) if bl in graphs[i2]]
     if i1==i2 and i1 != []:
         m = 1/nx.shortest_path_length(graphs[i1[0]], source=al, target=bl, weight=None)
-        x = np.append(x,m)
+        x.append(m)
     else:
-        x = np.append(x,0)
+        x.append(0)
 
 # output .h5:
 with h5py.File(args.opt, 'w') as opt:
