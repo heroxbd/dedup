@@ -49,6 +49,8 @@ data/$(DS)/ia.csv: $($(DS)_names:%=data/$(DS)/item/%.csv) $($(DS)_names:%=data/$
 
 features/d2v_singlet.model: data/train/ia.csv
 	python doc2vec.py -i $^ -o $@
+features/d2v_doublet.model: data/train/ia.csv data/validate/ia.csv
+	python doc2vec.py -i $^ -o $@
 
 data/$(DS)/uniglue/%.csv: data/$(DS)/item/%.csv data/$(DS)/author/%.csv
 	mkdir -p $(dir $@)
