@@ -52,6 +52,7 @@ data/uni_glue_${DS}.json: $($(DS)_names:%=data/$(DS)/uniglue/%.csv)
 data/$(DS)/author/%.csv: data/$(DS)/author0/%.csv
 	mkdir -p $(dir $@)
 	./venue_author_preprocess.R $^ -o $@ --field author
+
 data/$(DS)/item/%.csv: data/$(DS)/item0/%.csv
 	mkdir -p $(dir $@)
 	./venue_author_preprocess.R $^ -o $@ --field item
@@ -63,6 +64,22 @@ features/$(DS)/shortpath/%.h5: data/$(DS)/author/%.csv
 features/$(DS)/c_org/%.h5: data/$(DS)/author/%.csv
 	mkdir -p $(dir $@)
 	./c_org.py $^ -o $@
+
+features/$(DS)/c_venue/%.h5: data/$(DS)/author/%.csv
+	mkdir -p $(dir $@)
+	./c_org.py $^ -o $@ --field author
+
+features/$(DS)/c_title/%.h5: data/$(DS)/item/%.csv
+	mkdir -p $(dir $@)
+	./c_org.py $^ -o $@ --field title
+
+features/$(DS)/c_venue/%.h5: data/$(DS)/item/%.csv
+	mkdir -p $(dir $@)
+	./c_org.py $^ -o $@ --field venue
+
+features/$(DS)/c_venue/%.h5: data/$(DS)/item/%.csv
+	mkdir -p $(dir $@)
+	./diff_year.py $^ -o $@ --field year
 
 features/$(DS)/c_keywords/%.h5: data/$(DS)/keywords/%.csv
 	mkdir -p $(dir $@)
