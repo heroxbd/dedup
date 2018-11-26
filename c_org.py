@@ -25,8 +25,9 @@ dl = ((sum((Counter(al[1]) & Counter(bl[1])).values()), len(al[1])+len(bl[1]))
 x = np.array(list(dl), dtype='u2')
 
 df = pd.DataFrame({'{}_overlap'.format(args.field): x[:,0], 
-                   '{}_ratio'.format(args.field): x[:,0]/(x[:,1]-x[:,0]),
-                   '{}_share_dummy'.format(args.field): x[:,0]!=0})
+                   '{}_share_dummy'.format(args.field): x[:,0]!=0,
+                   '{}_jaccard_similarity_metric'.format(args.field): x[:,0]/(x[:,1]-x[:,0])}
+)
 
 # output .h5:
 with h5py.File(args.opt, 'w') as opt:
