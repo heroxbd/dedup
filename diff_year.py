@@ -34,7 +34,7 @@ length = len(yearlist)
 y = ((abs(yearlist.loc[aid]-yearlist.loc[bid])/(maxyear-minyear))
     for (aid, bid) in it.combinations(idlist,2))
 
-x = np.array(list(y), dtype='u2')
+x = np.array(list(y))
 
 
 # output .h5:
