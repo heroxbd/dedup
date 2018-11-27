@@ -14,7 +14,7 @@ au = pd.read_csv(args.ipt, index_col=0)
 yearspan = au[args.field].max() - au[args.field].min()
 cau = au.drop_duplicates().sort_values(by='id')
 
-dl = (abs(a-b)/yearspan
+dl = (float(abs(a-b))/yearspan
       for (a, b) in it.combinations(cau[args.field].values,2))
 x = np.array(list(dl))
 
