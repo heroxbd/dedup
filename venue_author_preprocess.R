@@ -19,7 +19,12 @@ if (args$field == 'itme') {
                                              replacement = ''),
                      venue = str_replace_all(venue,pattern = ",|/|'|-|:|\\(|\\)",replacement = ' '),
                      venue = str_replace_all(venue,pattern = "[:blank:]{2,}",replacement = ' '),
-                     venue = str_replace_all(venue,pattern = "^[:blank:]+",replacement = ''))
+                     venue = str_replace_all(venue,pattern = "^[:blank:]+",replacement = ''),
+                     title = str_replace_all(title,pattern = "[0-9]{4}|'|[0-9]+th|[0-9]+nd|[0-9]+st|[0-9]+rd|\\.",
+                                             replacement = ''),
+                     title = str_replace_all(title,pattern = ",|/|'|-|:|\\(|\\)",replacement = ' '),
+                     title = str_replace_all(title,pattern = "[:blank:]{2,}",replacement = ' '),
+                     title = str_replace_all(title,pattern = "^[:blank:]+",replacement = ''))
 } else if (args$field == "author") {
     dv <- dv %>% mutate(name = str_replace_all(name,pattern = "[0-9]{4}|'|[0-9]+th|[0-9]+nd|[0-9]+st|[0-9]+rd|\\.",
                                                     replacement = ''),
