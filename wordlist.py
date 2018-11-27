@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Nov 27 03:03:06 2018
-
-@author: zhuoj
-"""
-
 #!/usr/bin/env python
 import argparse
 psr = argparse.ArgumentParser("baseline solution")
@@ -25,10 +18,13 @@ au = pd.read_csv(args.ipt)
 # counted as 2.
 
 # this is expanded to be used with keywords as well
-x = au[args.field]
-wordlist = []
-for i in range(len(x)):
-    wordlist.append( [word for word in x.split(' ')])
+stringlist = au[args.field]
+wordlist = pd.DataFrame({'word':{},'id':{}})
+for i in range(len(stringlist)):
+    x = stringlist[i]
+    wordlist[i] = ([word for word in x.split(' ')])
+    ##wordlist[i]
+
 
 # output .h5:
 with h5py.File(args.opt, 'w') as opt:
