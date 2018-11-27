@@ -116,10 +116,6 @@ for (al, bl) in it.combinations(au.groupby('id')['id'],2):
 print(len(dl))
 x = np.array(list(dl), dtype='f4')
 
-'''
-# (original codes in c_ort.py)output .h5:
-with h5py.File(args.opt, 'w') as opt:
-    opt.create_dataset('c_{}'.format(args.field), data=x, compression="gzip", shuffle=True)
-'''
+dsn = args.opt.split('/')[-2] # doc2vec_singlet_native
 with h5py.File(output_file_path, 'w') as opt:
-    opt.create_dataset('doc2vecdata', data=x, compression="gzip", shuffle=True)
+    opt.create_dataset(dsn, data=x, compression="gzip", shuffle=True)

@@ -14,7 +14,7 @@ args <- psr$parse_args()
 
 dv <- read.csv(args$ipt, row.names=1)
 
-if (args$field == 'itme') {
+if (args$field == 'item') {
     dv <- dv %>% mutate(venue = str_replace_all(venue,pattern = "[0-9]{4}|'|[0-9]+th|[0-9]+nd|[0-9]+st|[0-9]+rd|\\.",
                                              replacement = ''),
                      venue = str_replace_all(venue,pattern = ",|/|'|-|:|\\(|\\)",replacement = ' '),

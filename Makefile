@@ -72,6 +72,13 @@ data/$(DS)/item/%.csv: data/$(DS)/item0/%.csv
 	mkdir -p $(dir $@)
 	./venue_author_preprocess.R $^ -o $@ --field item
 
+data/${DS}/title/%.csv: data/$(DS)/item/%.csv
+	mkdir -p $(dir $@)
+	./wordlist.py $^ -o $@ --field title
+data/${DS}/venue/%.csv: data/$(DS)/item/%.csv
+	mkdir -p $(dir $@)
+	./wordlist.py $^ -o $@ --field venue
+
 features/$(DS)/shortpath/%.h5: data/$(DS)/author/%.csv
 	mkdir -p $(dir $@)
 	python ./shortpath_feature.py $< -o $@
@@ -84,15 +91,11 @@ features/$(DS)/c_org/%.h5: data/$(DS)/author/%.csv
 	mkdir -p $(dir $@)
 	./c_org.py $^ -o $@
 
-features/$(DS)/c_venue/%.h5: data/$(DS)/author/%.csv
-	mkdir -p $(dir $@)
-	./c_org.py $^ -o $@ --field author
-
-features/$(DS)/c_title/%.h5: data/$(DS)/item/%.csv
+features/$(DS)/c_title/%.h5: data/$(DS)/title/%.csv
 	mkdir -p $(dir $@)
 	./c_org.py $^ -o $@ --field title
 
-features/$(DS)/c_venue/%.h5: data/$(DS)/item/%.csv
+features/$(DS)/c_venue/%.h5: data/$(DS)/venue/%.csv
 	mkdir -p $(dir $@)
 	./c_org.py $^ -o $@ --field venue
 
@@ -116,7 +119,8 @@ define merge-tpl
 features/$(DS)/$(1).h5: $$($(DS)_names:%=features/$(DS)/$(1)/%.h5)
 	./merge.py $$^ -o $$@ --field $(1)
 endef
-$(foreach k,c_keywords c_org shortpath diff_year doc2vec_singlet_native id_pairs label,$(eval $(call merge-tpl,$(k))))
+
+$(foreach k,c_keywords c_org shortpath diff_year id_pairs c_title c_venue label,$(eval $(call merge-tpl,$(k))))
 
 features/train/doc2vec_singlet_native.h5: $(train_names:%=features/train/doc2vec_singlet_native/%.h5)
 	./merge.py $^ -o $@ --field doc2vecdata
