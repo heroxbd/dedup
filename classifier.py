@@ -45,26 +45,43 @@ def parse_args():
 def loaders(args, split):
     print('Loading features')
     # Load features
+    load_split = 'train' if 'train' in split else split
     if len(args.feature_ids) == 0:
-        feat_file_list = glob.glob('features/train/c_*.h5')
+        feat_file_list = glob.glob('features/' + load_split + '/*.h5')
+        exclude_filename = ['label', 'id_pairs']
+        for f in exclude_filename:
+            f = osp.join('features', load_split, f + '.h5')
+            if f in feat_file_list:
+                feat_file_list.remove(f)
         args.feature_ids = [os.path.split(f)[1][:-3] for f in feat_file_list]
     else:
-        feat_file_list = ['features/train/c_' + f + '.h5' for f in args.feature_ids]
-        args.feature_ids = ['c_' + f for f in args.feature_ids]
+        feat_file_list = ['features/' + load_split + '/' + f + '.h5' for f in args.feature_ids]
     print('Using features: ' + ' '.join(args.feature_ids))
     data = []
     sep_data = None
     for feat_id, feat_file in zip(args.feature_ids, feat_file_list):
+        print('Loading features ' + feat_id)
+        time_start = time.time()
         with h5py.File(feat_file, 'r') as f:
             feat = f[feat_id][:]
-            # for concatenate, add axis 1
-            if len(feat.shape) == 1:
-                feat = feat[:, np.newaxis]
-            data.append(feat)
+            if len(feat.dtype) > 1:
+                # if features are saved as numpy structure
+                for field in feat.dtype.names:
+                    feat_field = feat[field]
+                    # for concatenate, add axis 1
+                    if len(feat_field.shape) == 1:
+                        feat_field = feat_field[:, np.newaxis]
+                    data.append(feat_field)
+            else:
+                # for concatenate, add axis 1
+                if len(feat.shape) == 1:
+                    feat = feat[:, np.newaxis]
+                data.append(feat)
             if sep_data is None:
                 sep_data = f['sep'][:]
             else:
                 assert np.all(sep_data == f['sep'][:]), 'sep of %s not the same with previous seps' % feat_id
+        print('%.2fs have passed' % (time.time() - time_start))
     data = np.concatenate(data, axis=1)
 
     # For train_val, load labels
@@ -74,7 +91,7 @@ def loaders(args, split):
             label = f['label'][:]
             sep = f['sep'][:]
         assert data.shape[0] == label.shape[0], 'lengths of feature and label not equal'
-        assert np.all(sep == sep_data), 'sep of label not the same with sep of features'
+        # assert np.all(sep == sep_data), 'sep of label not the same with sep of features'
         sep = np.concatenate([[0], sep])
         names_trainset = json.load(open('data/assignment_train.json'))
         names_trainset = sorted(names_trainset.keys())
@@ -94,11 +111,16 @@ def loaders(args, split):
                 json.dump(name_split, f)
 
         # Split data into train and val
-        index_train = [np.arange(ind['start'], ind['end']) for ind in index if ind['name'] in names_trainset]
+        index_train = [np.arange(ind['start'], ind['end']) for ind in index if ind['name'] in names_train]
         index_train = np.concatenate(index_train)
         index_val = [np.arange(ind['start'], ind['end']) for ind in index if ind['name'] in names_val]
         index_val = np.concatenate(index_val)
-        # Resample, #train = #val
+        # Resample step 1: filter out samples that are all zeros
+        if (not args.eval) and (not args.predict):
+            index_train = index_train[np.any(data[index_train] != 0, axis=1)]
+            index_val = index_val[np.any(data[index_val] != 0, axis=1)]
+            print('keep only samples with nonzero features: train %d, val %d' % (len(index_train), len(index_val)))
+        # Resample step 2: #train = #val = args.nb_samples
         if args.nb_samples > 0:
             if args.nb_samples < len(index_train):
                 index_train_pos = np.random.choice(index_train[label[index_train] == 1], args.nb_samples / 2)
@@ -118,11 +140,14 @@ def loaders(args, split):
     if args.predict:
         if split == 'train_val':
             sep = sep[1:]
-            sep = sep[len(names_train):] - sep[len(names_train)]
+            sep = sep[len(names_train):] - sep[len(names_train) - 1]
             data = data['val']
+            names = names_val
         else:
+            # TODO for val and test split
             sep = sep_data
-        return data, sep
+            names = None
+        return data, sep, names
     else:
         return data, label
 
@@ -192,6 +217,7 @@ def evaluate(args):
 
     # Eval
     print('Evaluation starts')
+    time_start = time.time()
     preds = []
     for model_id in args.model_ids:
         model_filename = osp.join('models', model_id + '.model')
@@ -208,15 +234,17 @@ def evaluate(args):
     else:
         raise ValueError('ensemble strategy %s not implemented' % args.ensemble)
     print('ensemble %s F1 score: %.6f' % (args.ensemble, f1_score(label, preds, average='binary')))
+    print('%.2fs have passed' % (time.time() - time_start))
 
 
 def predict(args):
     # Load data
     args.nb_samples = -1 # no resampling in prediction
-    data, sep = loaders(args, args.predict_split)
+    data, sep, names = loaders(args, args.predict_split)
 
     # Predict
     print('Prediction starts')
+    time_start = time.time()
     preds = []
     for model_id in args.model_ids:
         model_filename = osp.join('models', model_id + '.model')
@@ -226,19 +254,23 @@ def predict(args):
     if len(args.model_ids) >= 2:
         preds = np.concatenate(preds, axis=1)
         if args.ensemble == 'mean':
-            preds = (preds.mean(axis=1) > 0.5)
+            preds = preds.mean(axis=1)
         else:
             raise ValueError('ensemble strategy %s not implemented' % args.ensemble)
     else:
-        preds = (preds.mean(axis=1) > 0.5)
+        preds = preds[0]
+    print('%.2fs have passed' % (time.time() - time_start))
+    
     # Path to save result
-    if not osp.exists('output'):
-        os.makedirs('output')
-    predict_file = osp.join('output', 'classifier_output_' + args.predict_split + '.h5')
-    with h5py.File(predict_file, 'w') as f:
-        f.create_dataset('prediction', data=preds, compression="gzip", shuffle=True)
-        f.create_dataset('sep', data=sep, compression="gzip", shuffle=True)
-    print('Prediction saved to ' + predict_file)
+    output_dir = osp.join('output', args.predict_split)
+    if not osp.exists(output_dir):
+        os.makedirs(output_dir)
+    sep = np.concatenate(([0], sep))
+    for i, name in enumerate(names):
+        predict_file = osp.join(output_dir, name + '.h5')
+        with h5py.File(predict_file, 'w') as f:
+            f.create_dataset('prediction', data=preds[sep[i]:sep[i+1]], compression="gzip", shuffle=True)
+        print('Prediction of ' + name + ' saved to ' + predict_file)
 
 
 if __name__ == '__main__':

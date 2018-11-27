@@ -26,7 +26,7 @@ x = np.array(list(dl), dtype='u2')
 
 df = pd.DataFrame({'{}_overlap'.format(args.field): x[:,0], 
                    '{}_share_dummy'.format(args.field): x[:,0]!=0,
-                   '{}_jaccard_similarity_metric'.format(args.field): x[:,0]/(x[:,1]-x[:,0])}
+                   '{}_jaccard_similarity_metric'.format(args.field): x[:,0].astype('float32')/(x[:,1]-x[:,0])}
 )
 
 # output .h5:

@@ -31,7 +31,7 @@ def f1_score(gt, pred):
 
 def evaluate(input, names=None, average='binary'):
     '''
-    input could be a list or a json filename, 
+    input could be a dict or a json filename, 
     names assign the names to calculate f1, default use all names
     average: binary - pairwise f1 for positive samples only
              macro - mean f1 of positive and negative samples
@@ -39,15 +39,22 @@ def evaluate(input, names=None, average='binary'):
     if isinstance(input, str) and input.split('.')[-1] == 'json':
         pred = json.load(open(input))
     else:
-        assert isinstance(input, list), 'input must be a list or a json filename'
+        assert isinstance(input, dict), 'input must be a dict or a json filename'
 
-    if args.names is None:
-        print('Evaluation starts with %s manner.' % average)
+    print('Evaluation starts with %s manner.' % average)
     time_start = time.time()
     # Load gt file
     label = json.load(open('data/assignment_train.json'))
     if names is None:
-        names = label.keys()
+        names = pred.keys()
+        assert np.all([name in label.keys() for name in names]), \
+            'names of predicions not in label'
+    else:
+        assert np.all([name in pred.keys() for name in names]), \
+            'names not in prediction'
+        assert np.all([name in label.keys() for name in names]), \
+            'names not in label'
+    print('Evaluation with names: ' + ', '.join(names))
 
     # Find pairs of each name
     pairs_gt_all = []

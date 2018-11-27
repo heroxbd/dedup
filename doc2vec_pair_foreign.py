@@ -18,9 +18,9 @@ the output file will be saved in /features/authorName_doc2vec.h5
 
 import argparse
 psr = argparse.ArgumentParser("word2vec feature engineer")
-psr.add_argument("-i", default='data/train/item/li_ma.csv', dest='ipt', help="input")
+psr.add_argument("-i", default='data/validate/item/bing_chen.csv', dest='ipt', help="input")
 psr.add_argument("-m", default='features/d2v_singlet.model', dest='model_path', help="input")
-psr.add_argument("-o", default='features/train/doc2vec_singlet_native/li_ma.h5', dest='opt', help="output")
+psr.add_argument("-o", default='features/validate/doc2vec_singlet_foreign/bing_chen.h5', dest='opt', help="output")
 args = psr.parse_args()
 
 import pandas as pd
@@ -33,7 +33,7 @@ import os
 
 # === Specify major parameters ================================================
 #au = pd.read_csv(args.ipt)
-item_file_name = 'data/train/ia.csv' # the id-title-abstract data at /data/ia.csv
+#input_file_name_list = ['data/train/ia.csv'] # the id-title-abstract data at /data/ia.csv
 input_file_path = args.ipt # the file is read at /data/*.csv
 output_file_path = args.opt # the file will be save at /features/*.h5
 model_path = args.model_path
@@ -60,41 +60,53 @@ x = np.array(list(dl))
 
 # === import data =============================================================
 # load file with panda module
-reader = pd.read_csv(item_file_name)
+#reader = pd.concat([pd.read_csv(fn) for fn in input_file_name_list])
 # delete duplicating records
 #reader_distinct = reader.drop_duplicates('id')
-reader_author = reader.loc[reader['auid'] == author_name]
+#reader_author = reader.loc[reader['auid'] == author_name]
 
-# prepare raw corpus & id_list
-corpus_author = []
-id_list_author = []
-for num in range(len(reader_author)):
-    corpus_author.append( str(reader_author.iloc[num]['title']) + str(reader_author.iloc[num]['abstract']) )
-    id_list_author.append( reader_author.iloc[num]['id'] )
+
 
 au = pd.read_csv(input_file_path) # author associated file
 model = Doc2Vec.load(model_path)
 
+# === calculate doc2vec =======================================================
+
+# prepare raw corpus & id_list & infered doc2vec
+corpus_author = []
+id_list_author = []
+for num in range(len(au)):
+    corpus_author.append( str(au.iloc[num]['title']) )
+    id_list_author.append( au.iloc[num]['id'] )
+
+doc2vec_author = []
+for num in range(len(corpus_author)):
+    doc2vec_author.append( model.infer_vector(corpus_author[num]) )
+
 # === calculate similarities ==================================================
 
 dl = [];
+index_pair = []
 total_num = len(au)*(len(au)-1)/2
 progress = 0
 progress_step = 0.05
 count = 0
 tag_a_cache=[]
 for (al, bl) in it.combinations(au.groupby('id')['id'],2):
+    
+    index_pair.append([al, bl])
+    
     tag_a = al[0]
     tag_b = bl[0]
     if tag_a == tag_a_cache:
         pass
     else:
         idx_a = id_list_author.index(tag_a)
-    idx_b = id_list_author.index(tag_b)    
+    idx_b = id_list_author.index(tag_b)
     #idx_a = id_list.index(tag_a)
     #idx_b = id_list.index(tag_b)
-    docvec_a = model.docvecs[tag_a]
-    docvec_b = model.docvecs[tag_b]
+    docvec_a = doc2vec_author[idx_a]
+    docvec_b = doc2vec_author[idx_b]
     norm_a = np.linalg.norm(docvec_a)
     norm_b = np.linalg.norm(docvec_b)
     distance = np.linalg.norm(docvec_a - docvec_b)
@@ -114,7 +126,7 @@ for (al, bl) in it.combinations(au.groupby('id')['id'],2):
         progress = progress + progress_step
 
 print(len(dl))
-x = np.array(list(dl), dtype='f4')
+x = np.array(list(dl))
 
 '''
 # (original codes in c_ort.py)output .h5:
