@@ -22,11 +22,13 @@ au = pd.read_csv(args.ipt)
 maxyear = max(au[args.field])
 minyear = min(au[args.field])
 idlist = np.unique(au['id'])
+difflist = []
+
 
 for (aid, bid) in it.combinations(idlist,2):
     ayear = np.array((au[au['id']==aid]['year']))[0]
     byear = np.array((au[au['id']==bid]['year']))[0]
-    difflist = abs(ayear-byear)/(maxyear-minyear) 
+    difflist.append(abs(ayear-byear)/(maxyear-minyear))
 
 x = np.array(list(difflist), dtype='u2')
 
