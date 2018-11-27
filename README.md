@@ -1,3 +1,16 @@
+# feature list
+
+- doc2vec singlet.model 
+- doc2vec doublet.model 
+- shortpath/%.h5
+- c_org/%.h5
+- c_venue/%.h5
+- c_title/%.h5
+- c_venue/%.h5
+- diff_year/%.h5
+- c_keywords/%.h5
+- label/%.h5
+
 # data pipeline
 
 ## 数据存放
@@ -41,7 +54,7 @@ with h5py.File(args.opt, 'w') as opt:
     sudo apt-get update
     sudo apt-get install r-base
     sudo apt-get install r-base-dev
-    ``` 
+    ```
 + 命令行下输入R，显示R的欢迎界面，安装成功
 + 退出R，在命令行下输入unset DISPLAY
 + 打开R，输入``install.packages("plyr")``，选择国内的镜像（比如19是北京），即能进行安装
@@ -57,14 +70,14 @@ with h5py.File(args.opt, 'w') as opt:
 附服务器linux下安装步骤，其他环境查看https://xgboost.readthedocs.io/en/latest/build.html
 ``` 
 git clone --recursive https://github.com/dmlc/xgboost
-``` 
+```
 进入xgboost文件夹，-j后可以加用来执行make命令的核数，比如-j8就是用8个核
 ``` 
 mkdir build
 cd build
 cmake .. 
 make -j
-``` 
+```
 安装成功后，
 ```
 cd python-package; python setup.py develop --user
