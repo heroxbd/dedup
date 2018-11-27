@@ -114,7 +114,7 @@ for (al, bl) in it.combinations(au.groupby('id')['id'],2):
         progress = progress + progress_step
 
 print(len(dl))
-x = np.array(list(dl))
+x = np.array(list(dl), dtype='f4')
 
 '''
 # (original codes in c_ort.py)output .h5:
