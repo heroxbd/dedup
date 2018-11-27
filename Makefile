@@ -98,6 +98,10 @@ features/$(DS)/c_keywords/%.h5: data/$(DS)/keywords/%.csv
 	mkdir -p $(dir $@)
 	./c_org.py $^ -o $@ --field keywords
 
+features/$(DS)/id_pairs/%.h5: data/$(DS)/keywords/%.csv
+	mkdir -p $(dir $@)
+	./id_pairs.py $^ -o $@ --field keywords
+
 features/$(DS)/label/%.h5: data/$(DS)/item/%.csv
 	mkdir -p $(dir $@)
 	./label.py $^ -o $@ --ref data/assignment_$(DS).json
@@ -106,7 +110,7 @@ define merge-tpl
 features/$(DS)/$(1).h5: $$($(DS)_names:%=features/$(DS)/$(1)/%.h5)
 	./merge.py $$^ -o $$@ --field $(1)
 endef
-$(foreach k,c_keywords c_org shortpath label,$(eval $(call merge-tpl,$(k))))
+$(foreach k,c_keywords c_org shortpath label id_pairs,$(eval $(call merge-tpl,$(k))))
 
 # Delete partial files when the processes are killed.
 .DELETE_ON_ERROR:
