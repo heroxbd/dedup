@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Nov 26 16:30:33 2018
-
-@author: zhuoj
-"""
-
 #!/usr/bin/env python
 import argparse
 psr = argparse.ArgumentParser("baseline solution")
