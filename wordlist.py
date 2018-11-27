@@ -6,7 +6,7 @@ psr.add_argument('ipt', help="input")
 psr.add_argument('--field', default='org', help="the field to count common entries in")
 args = psr.parse_args()
 
-import pandas as pd
+import pandas as pd, numpy as np
 # ^^^ command line specification
 
 au = pd.read_csv(args.ipt)
@@ -20,8 +20,15 @@ au = pd.read_csv(args.ipt)
 # this is expanded to be used with keywords as well
 stringlist = au[['id', args.field]]
 
-rst = pd.concat([pd.DataFrame({"id": r['id'],"wordcut":
-                               pd.Series(r[args.field].split(' '))}) for (i, r) in
-                 stringlist.iterrows()])
+def dfo(r):
+    if type(r[args.field]) is float:
+        # !!emtpy field!!
+        # insert the id so that it does not intersect with any other.
+        st = [r['id']]
+    else:
+        st = pd.Series(r[args.field].split(' '))
+    return pd.DataFrame({"id": r['id'], args.field: st})
+
+rst = pd.concat([dfo(r) for (i, r) in stringlist.iterrows()])
 
 rst.to_csv(args.opt, index=False)
