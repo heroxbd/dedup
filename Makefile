@@ -51,6 +51,9 @@ features/d2v_singlet.model: data/train/ia.csv
 	python doc2vec.py -i $^ -o $@
 features/d2v_doublet.model: data/train/ia.csv data/validate/ia.csv
 	python doc2vec.py -i $^ -o $@
+features/train/doc2vec_singlet_native/%.h5: data/train/item/%.csv features/d2v_singlet.model
+	mkdir -p $(dir $@)
+	python doc2vec_pair_native.py -i $< -o $@ -m $(word 2,$^)
 
 data/$(DS)/uniglue/%.csv: data/$(DS)/item/%.csv data/$(DS)/author/%.csv
 	mkdir -p $(dir $@)
@@ -110,7 +113,7 @@ define merge-tpl
 features/$(DS)/$(1).h5: $$($(DS)_names:%=features/$(DS)/$(1)/%.h5)
 	./merge.py $$^ -o $$@ --field $(1)
 endef
-$(foreach k,c_keywords c_org shortpath label id_pairs,$(eval $(call merge-tpl,$(k))))
+$(foreach k,c_keywords c_org shortpath diff_year doc2vec_singlet_native id_pairs label,$(eval $(call merge-tpl,$(k))))
 
 # Delete partial files when the processes are killed.
 .DELETE_ON_ERROR:
