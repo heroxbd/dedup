@@ -59,18 +59,16 @@ G.add_nodes_from(MisNodes)
 G.add_edges_from(list(Mislinks[['source', 'target']].to_records(index=False)))
 graphs = list(nx.connected_component_subgraphs(G))
 
-x = []
+
 idnum = len(np.unique(data['id']))
 pairlength = idnum*(idnum-1)
+x = np.zeros(pairlength)
 i = 0
 for (al, bl) in it.combinations(np.unique(data['id']),2):
     i1 = [i1 for i1 in range(len(graphs)) if al in graphs[i1]]
     i2 = [i2 for i2 in range(len(graphs)) if bl in graphs[i2]]
     if i1==i2:
         x[i]=1
-        i = i+1
-    else:
-        x[i]=0
         i = i+1
 
 # output .h5:
