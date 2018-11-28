@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import argparse
 import json
 import numpy as np
@@ -27,7 +28,7 @@ def f1_score(gt, pred):
             f1 = 0
         else:
             f1 = 2 * precision * recall / (precision + recall)
-    return f1
+    return f1, precision, recall
 
 def evaluate(input, names=None, average='binary'):
     '''
@@ -122,12 +123,14 @@ def evaluate(input, names=None, average='binary'):
     pairs_pred_all = np.concatenate(pairs_pred_all)
     if average == 'binary':
         # 'binary': Only report results for the class specified by pos_label
-        f1 = f1_score(pairs_gt_all, pairs_pred_all)
+        f1, precision, recall = f1_score(pairs_gt_all, pairs_pred_all)
+        print('Precision: %.4f, recall: %.4f' % (precision, recall))
     elif average == 'macro':
         # 'macro': Calculate metrics for each label, and find their unweighted mean. 
         # This does not take label imbalance into account.
         # for pos_label
-        f1 = f1_score(pairs_gt_all, pairs_pred_all)
+        f1, precision, recall = f1_score(pairs_gt_all, pairs_pred_all)
+        print('Positive precision: %.4f, recall: %.4f' % (precision, recall))
         # for neg_label
         more_neg = nb_papers_all * (nb_papers_all - 1) // 2 - len(pairs_gt_all)
         pairs_gt_all = np.logical_not(pairs_gt_all)
@@ -143,7 +146,8 @@ def evaluate(input, names=None, average='binary'):
             if precision == 0 or recall == 0:
                 f1 += 0
             else:
-                f1 += 2 * precision * recall / (precision + recall) 
+                f1 += 2 * precision * recall / (precision + recall)
+        print('Negative precision: %.4f, recall: %.4f' % (precision, recall))
         f1 /= 2
     else:
         raise ValueError('manner %s not implemented' % average)
