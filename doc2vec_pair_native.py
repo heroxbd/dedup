@@ -114,8 +114,11 @@ for (al, bl) in it.combinations(au.groupby('id')['id'],2):
         progress = progress + progress_step
 
 print(len(dl))
-x = np.array(list(dl), dtype='f4')
 
 dsn = args.opt.split('/')[-2] # doc2vec_singlet_native
+x = np.array(dl, dtype=[('{}_distance'.format(dsn), 'f4'), 
+                        ('{}_angle'.format(dsn), 'f4'), 
+                        ('{}_length'.format(dsn), 'f4')])
+
 with h5py.File(output_file_path, 'w') as opt:
     opt.create_dataset(dsn, data=x, compression="gzip", shuffle=True)

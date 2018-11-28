@@ -120,12 +120,9 @@ features/$(DS)/$(1).h5: $$($(DS)_names:%=features/$(DS)/$(1)/%.h5)
 	./merge.py $$^ -o $$@ --field $(1)
 endef
 
-$(foreach k,c_keywords c_org shortpath diff_year id_pairs c_title c_venue label,$(eval $(call merge-tpl,$(k))))
+paired_features:=c_keywords c_org shortpath diff_year id_pairs c_title c_venue doc2vec_singlet_native doc2vec_doublet_native label
 
-features/train/doc2vec_singlet_native.h5: $(train_names:%=features/train/doc2vec_singlet_native/%.h5)
-	./merge.py $^ -o $@ --field doc2vecdata
-features/train/doc2vec_doublet_native.h5: $(train_names:%=features/train/doc2vec_doublet_native/%.h5)
-	./merge.py $^ -o $@ --field doc2vecdata
+$(foreach k,$(paired_features),$(eval $(call merge-tpl,$(k))))
 
 # Delete partial files when the processes are killed.
 .DELETE_ON_ERROR:

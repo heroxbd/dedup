@@ -14,9 +14,9 @@ au = pd.read_csv(args.ipt, index_col=0)
 yearspan = au[args.field].max() - au[args.field].min()
 cau = au.drop_duplicates().sort_values(by='id')
 
-dl = (float(abs(a-b))/yearspan
-      for (a, b) in it.combinations(cau[args.field].values,2))
-x = np.array(list(dl))
+dl = [float(abs(a-b))/yearspan
+      for (a, b) in it.combinations(cau[args.field].values,2)]
+x = np.array(dl, dtype=[('diff_year', 'f4')])
 
 # output .h5:
 with h5py.File(args.opt, 'w') as opt:
