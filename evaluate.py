@@ -132,7 +132,7 @@ def evaluate(input, names=None, average='binary'):
         more_neg = nb_papers_all * (nb_papers_all - 1) // 2 - len(pairs_gt_all)
         pairs_gt_all = np.logical_not(pairs_gt_all)
         pairs_pred_all = np.logical_not(pairs_pred_all)
-        correctly_pred = np.logical_and(pairs_gt_all, pairs_pred_all).sum()
+        correctly_pred = np.logical_and(pairs_gt_all, pairs_pred_all).sum() + more_neg
         total_pred = np.sum(pairs_pred_all) + more_neg
         total_gt = np.sum(pairs_gt_all) + more_neg
         if total_gt == 0 or total_pred == 0:

@@ -126,10 +126,12 @@ def loaders(args, split):
                 index_train_pos = np.random.choice(index_train[label[index_train] == 1], args.nb_samples / 2)
                 index_train_neg = np.random.choice(index_train[label[index_train] == 0], args.nb_samples - args.nb_samples / 2)
                 index_train = np.concatenate((index_train_pos, index_train_neg))
+                # index_train = np.random.choice(index_train, args.nb_samples)
             if args.nb_samples < len(index_val):
                 index_val_pos = np.random.choice(index_val[label[index_val] == 1], args.nb_samples / 2)
                 index_val_neg = np.random.choice(index_val[label[index_val] == 0], args.nb_samples - args.nb_samples / 2)
                 index_val = np.concatenate((index_val_pos, index_val_neg))
+                # index_val = np.random.choice(index_val, args.nb_samples)
         data = OrderedDict((('train', data[index_train]), ('val', data[index_val])))
         label = OrderedDict((('train', label[index_train]), ('val', label[index_val])))
         print('Feature size: train ' + str(data['train'].shape) + ', val ' + str(data['val'].shape))
@@ -214,6 +216,7 @@ def evaluate(args):
     args.nb_samples = -1 # no resampling in evaluation
     data, label = loaders(args, 'train_val')
     data, label = data['val'], label['val']
+    # data, label = data['train'], label['train']
 
     # Eval
     print('Evaluation starts')
@@ -275,8 +278,8 @@ def predict(args):
 
 if __name__ == '__main__':
     args = parse_args()
-    retrain_flag = not np.all([osp.exists(osp.join('models', model_id + '.model')) for model_id in args.model_ids])
-    if args.retrain or retrain_flag:
+    retrain_flag = np.any([not osp.exists(osp.join('models', model_id + '.model')) for model_id in args.model_ids])
+    if args.retrain:
         train(args)
     elif args.eval:
         assert retrain_flag == False, 'Not all models are trained'
