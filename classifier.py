@@ -42,6 +42,23 @@ def parse_args():
     return args
 
 
+def f1_score(gt, pred):
+    correctly_pred = np.logical_and(gt, pred).sum()
+    total_pred = np.sum(pred)
+    total_gt = np.sum(gt)
+    if total_gt == 0 or total_pred == 0:
+        f1 = 0
+    else:
+        precision = float(correctly_pred) / total_pred
+        recall = float(correctly_pred) / total_gt
+        if precision == 0 or recall == 0:
+            f1 = 0
+        else:
+            f1 = 2 * precision * recall / (precision + recall)
+    print('Precision: %.4f, recall: %.4f' % (precision, recall))
+    return f1
+
+
 def loaders(args, split):
     print('Loading features')
     # Load features
@@ -192,7 +209,7 @@ def train(args):
         print('Training finished. %.2fs passed' % (time.time() - time_start))
         # validate
         pred_val = model.predict_proba(data_val)[:, 1][:, np.newaxis]
-        f1[model_id] = f1_score(label_val, pred_val > 0.5, average='binary')
+        f1[model_id] = f1_score(label_val, (pred_val > 0.5).ravel())
         print('F1 score: %.6f' % f1[model_id])
         # for ensemble
         preds.append(pred_val)
@@ -205,10 +222,10 @@ def train(args):
         return
     preds = np.concatenate(preds, axis=1)
     if args.ensemble == 'mean':
-        preds = (preds.mean(axis=1) > 0.5)
+        preds = (preds.mean(axis=1) > 0.5).ravel()
     else:
         raise ValueError('ensemble strategy %s not implemented' % args.ensemble)
-    print('ensemble %s F1 score: %.6f' % (args.ensemble, f1_score(label_val, preds, average='binary')))
+    print('ensemble %s F1 score: %.6f' % (args.ensemble, f1_score(label_val, preds)))
 
 
 def evaluate(args):
@@ -226,17 +243,17 @@ def evaluate(args):
         model_filename = osp.join('models', model_id + '.model')
         model = joblib.load(model_filename)
         pred = model.predict_proba(data)[:, 1][:, np.newaxis]
-        print('%s f1 score: %.6f' % (model_id, f1_score(label, pred > 0.5, average='binary')))
+        print('%s f1 score: %.6f' % (model_id, f1_score(label, (pred > 0.5).ravel())))
         preds.append(pred)
     # Ensemble
     if len(args.model_ids) < 2:
         return
     preds = np.concatenate(preds, axis=1)
     if args.ensemble == 'mean':
-        preds = (preds.mean(axis=1) > 0.5)
+        preds = (preds.mean(axis=1) > 0.5).ravel()
     else:
         raise ValueError('ensemble strategy %s not implemented' % args.ensemble)
-    print('ensemble %s F1 score: %.6f' % (args.ensemble, f1_score(label, preds, average='binary')))
+    print('ensemble %s F1 score: %.6f' % (args.ensemble, f1_score(label, preds)))
     print('%.2fs have passed' % (time.time() - time_start))
 
 

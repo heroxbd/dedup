@@ -99,6 +99,10 @@ echo 'train_names:=bin_yu bin_zhao bing_liu bo_jiang bo_zhou c_c_wang c_h_chen c
 ```
 make features/train/c_keywords.h5
 make features/train/c_org.h5
+make features/train/c_venue.h5
+make features/train/c_title.h5
+make features/train/diff_year.h5
+make features/train/id_pairs.h5
 make features/train/label.h5
 ```
 会逐个显示类似以下命令
@@ -120,10 +124,10 @@ http://dpcg.d.airelinux.org:8000/edit/dedup/features/train/label.h5
 ```
 
 ### 第三步：训练分类器
-执行命令``python classifier.py``即可训练分类器。
+执行命令``python classifier.py --nb_samples=100000``即可训练分类器。
 
-其中可选参数见``parse_args()``函数，
-建议早期使用``--nb_samples=100000``，即用于训练和验证的样本量为100000，来调试代码保证跑通。在特征数量为2，样本量为100,000时，训练一次大约1分钟（读入数据耗时一半），且f1 score与样本量10,000,000无差异，在0.23左右。
+``--nb_samples=100000``，即用于训练和验证的样本量为100000，来调试代码保证跑通。在特征数量为2，样本量为100,000时，训练一次大约1分钟（读入数据耗时一半），且f1 score与样本量10,000,000无差异，在0.23左右。
+其他可选参数见``parse_args()``函数，
 
 训练过程中，会按4:1的比例将训练集划分为train和val（代码用train_val表示训练集中的val部分，val表示没有label的validate集），划分结果保存在data/split_1fold.json中，后续的author assignment的训练应在train_val集上进行，调用evaluate函数时可通过names参数传入train_val集的所有名字，使得f1 score只在train_val集上计算。
 
@@ -131,4 +135,11 @@ http://dpcg.d.airelinux.org:8000/edit/dedup/features/train/label.h5
 
 如果需要评价当前训练模型在train的val split上的分类效果，执行``python classifier.py --eval``即会输出每个分类器及ensemble后的f1 score。
 
-如果需要用当前训练的模型进行分类预测，执行``python classifier.py --predict --predict_split train_val``其中predict_split暂时可选train（整个训练集）, train_val（仅训练集中的val部分），则会将预测结果保存到output/classifier_output_split.h5，其中'prediction'域保存结果，'sep'域保存每个名字的分界点。
+如果需要用当前训练的模型进行分类预测，执行``python classifier.py --predict --predict_split train_val``其中predict_split暂时可选train（整个训练集）, train_val（仅训练集中的val部分），则会将每个名字的预测结果单独保存到output/split/name.h5，其中'prediction'域保存预测结果。
+
+如果要查看预测结果中每个结果序号对应的id pairs，可以到features/train/id_pairs下查看。
+
+### 第四步：author assignment
+
+### 第五步：评价结果
+将结果保存成和assignment_train.json一样的格式，执行``./evaluate.py *.json``即可输出precision, recall和f1。注意结果的名字必须在train集里面，才能进行离线评测。
