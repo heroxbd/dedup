@@ -25,17 +25,6 @@ coauthor_glue <- function(i){
         author<-read.csv(pv[i]) %>% select(-X)
         names(author) <- c('name','org','id','seq')
         fname <- str_replace_all(pv[i],pattern='.csv',replacement = '')
-        author <- author %>% mutate(name = str_replace_all(name,pattern = "[0-9]{4}|'|[0-9]+th|[0-9]+nd|[0-9]+st|[0-9]+rd|\\.",
-                                                           replacement = ''),
-                                    name = str_replace_all(name,pattern = ",|/|'|-|:|\\(|\\)",replacement = ' '),
-                                    name = str_replace_all(name,pattern = "[:blank:]{2,}",replacement = ' '),
-                                    name = str_replace_all(name,pattern = "^[:blank:]+",replacement = ''),
-                                    name = tolower(name),
-                                    org = str_replace_all(org,pattern = "[0-9]{4}|'|[0-9]+th|[0-9]+nd|[0-9]+st|[0-9]+rd|\\.",
-                                                          replacement = ''),
-                                    org = str_replace_all(org,pattern = ",|/|'|-|:|\\(|\\)",replacement = ' '),
-                                    org = str_replace_all(org,pattern = "[:blank:]{2,}",replacement = ' '),
-                                    org = str_replace_all(org,pattern = "^[:blank:]+",replacement = ''))
         
         auname <- author %>% group_by(name) %>% dplyr::summarise(count = n()) %>% arrange(desc(count))
         auname <- auname$name[1]        
@@ -69,10 +58,3 @@ coauthor_glue <- function(i){
 }
 
 l_ply(1:length(pv), coauthor_glue, .parallel=TRUE)
-
-
-
-
-
-
-
