@@ -34,6 +34,8 @@ def parse_args():
                         help='predict on split: train, train_val, val, test')
     parser.add_argument('--retrain', action='store_true',
                         help='retrain all models')
+    parser.add_argument('--remove_missing', action='store_true',
+                        help='remove samples with missing data in train')
     parser.add_argument('--name_split_file', type=str, default='data/split_1fold.json',
                         help='file that contains train and val splits of names')
     parser.add_argument('--name_split_train_ratio', type=float, default=0.8,
@@ -65,7 +67,7 @@ def loaders(args, split):
     load_split = 'train' if 'train' in split else split
     if len(args.feature_ids) == 0:
         feat_file_list = glob.glob('features/' + load_split + '/*.h5')
-        exclude_filename = ['label', 'id_pairs']
+        exclude_filename = ['label', 'id_pairs', 'valid_index']
         for f in exclude_filename:
             f = osp.join('features', load_split, f + '.h5')
             if f in feat_file_list:
@@ -132,11 +134,23 @@ def loaders(args, split):
         index_train = np.concatenate(index_train)
         index_val = [np.arange(ind['start'], ind['end']) for ind in index if ind['name'] in names_val]
         index_val = np.concatenate(index_val)
+        print('Loaded #train: %d, #val: %d' % (len(index_train), len(index_val)))
+
+        # Leave out samples with missing data
+        if args.remove_missing:
+            print('Removing samples with missing data')
+            with h5py.File('features/train/valid_index.h5', 'r') as f:
+                valid_index = f['valid_index'][:].astype(np.bool)
+            index_train = index_train[valid_index[index_train]]
+            index_val = index_val[valid_index[index_val]]
+            print('After removing missing data, #train: %d, #val: %d' % (len(index_train), len(index_val)))
+            
         # Resample step 1: filter out samples that are all zeros
-        if (not args.eval) and (not args.predict):
-            index_train = index_train[np.any(data[index_train] != 0, axis=1)]
-            index_val = index_val[np.any(data[index_val] != 0, axis=1)]
-            print('keep only samples with nonzero features: train %d, val %d' % (len(index_train), len(index_val)))
+        # if (not args.eval) and (not args.predict):
+        #     index_train = index_train[np.any(data[index_train] != 0, axis=1)]
+        #     index_val = index_val[np.any(data[index_val] != 0, axis=1)]
+        #     print('keep only samples with nonzero features: train %d, val %d' % (len(index_train), len(index_val)))
+
         # Resample step 2: #train = #val = args.nb_samples
         if args.nb_samples > 0:
             if args.nb_samples < len(index_train):
@@ -260,6 +274,7 @@ def evaluate(args):
 def predict(args):
     # Load data
     args.nb_samples = -1 # no resampling in prediction
+    args.remove_missing = False # no remove data in prediction
     data, sep, names = loaders(args, args.predict_split)
 
     # Predict

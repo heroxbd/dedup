@@ -103,6 +103,7 @@ make features/train/c_venue.h5
 make features/train/c_title.h5
 make features/train/diff_year.h5
 make features/train/id_pairs.h5
+make features/train/valid_index.h5
 make features/train/label.h5
 ```
 会逐个显示类似以下命令
@@ -127,7 +128,7 @@ http://dpcg.d.airelinux.org:8000/edit/dedup/features/train/label.h5
 执行命令``python classifier.py --nb_samples=100000``即可训练分类器。
 
 ``--nb_samples=100000``，即用于训练和验证的样本量为100000，来调试代码保证跑通。在特征数量为2，样本量为100,000时，训练一次大约1分钟（读入数据耗时一半），且f1 score与样本量10,000,000无差异，在0.23左右。
-其他可选参数见``parse_args()``函数，
+其他可选参数见``parse_args()``函数，例如使用``--remove_missing``可以去掉有缺失的数据。
 
 训练过程中，会按4:1的比例将训练集划分为train和val（代码用train_val表示训练集中的val部分，val表示没有label的validate集），划分结果保存在data/split_1fold.json中，后续的author assignment的训练应在train_val集上进行，调用evaluate函数时可通过names参数传入train_val集的所有名字，使得f1 score只在train_val集上计算。
 

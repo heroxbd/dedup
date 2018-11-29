@@ -111,6 +111,10 @@ features/$(DS)/id_pairs/%.h5: data/$(DS)/keywords/%.csv
 	mkdir -p $(dir $@)
 	./id_pairs.py $^ -o $@ --field keywords
 
+features/$(DS)/valid_index/%.h5: data/$(DS)/keywords/%.csv
+	mkdir -p $(dir $@)
+	./valid_index.py $^ -o $@ --field keywords
+
 features/$(DS)/label/%.h5: data/$(DS)/item/%.csv
 	mkdir -p $(dir $@)
 	./label.py $^ -o $@ --ref data/assignment_$(DS).json
@@ -120,7 +124,7 @@ features/$(DS)/$(1).h5: $$($(DS)_names:%=features/$(DS)/$(1)/%.h5)
 	./merge.py $$^ -o $$@ --field $(1)
 endef
 
-paired_features:=c_keywords c_org shortpath diff_year id_pairs c_title c_venue doc2vec_singlet_native doc2vec_doublet_native label
+paired_features:=c_keywords c_org shortpath diff_year id_pairs valid_index c_title c_venue doc2vec_singlet_native doc2vec_doublet_native label
 
 $(foreach k,$(paired_features),$(eval $(call merge-tpl,$(k))))
 
