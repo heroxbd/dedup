@@ -46,6 +46,7 @@ def evaluate(input, names=None, average='binary'):
     time_start = time.time()
     # Load gt file
     label = json.load(open('data/assignment_train.json'))
+    label.update(json.load(open('data/assignment_validate.json')))
     if names is None:
         names = pred.keys()
         assert np.all([name in label.keys() for name in names]), \
