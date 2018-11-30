@@ -26,18 +26,22 @@ def parse_args():
                         help='ensemble strategy')
     parser.add_argument('--nb_samples', type=int, default=-1,
                         help='#samples used in train and val, -1 for all')
+    parser.add_argument('--train_split', type=str, default='validate',
+                        help='train on split: train, validate')
     parser.add_argument('--eval', action='store_true',
                         help='eval models')
+    parser.add_argument('--eval_split', type=str, default='validate_val',
+                        help='eval on split: train_val, validate_val')
     parser.add_argument('--predict', action='store_true',
                         help='use models to predict on set')
     parser.add_argument('--predict_split', type=str, default='train',
-                        help='predict on split: train, train_val, val, test')
+                        help='predict on split: train, train_val, validate, validate_val, test')
     parser.add_argument('--retrain', action='store_true',
                         help='retrain all models')
-    parser.add_argument('--remove_missing', action='store_true',
-                        help='remove samples with missing data in train')
-    parser.add_argument('--name_split_file', type=str, default='data/split_1fold.json',
-                        help='file that contains train and val splits of names')
+    # parser.add_argument('--remove_missing', action='store_true',
+    #                     help='remove samples with missing data in train')
+    # parser.add_argument('--name_split_file', type=str, default='data/split_1fold.json',
+    #                     help='file that contains train and val splits of names')
     parser.add_argument('--name_split_train_ratio', type=float, default=0.8,
                         help='ratio of train names to all names')
     args = parser.parse_args()
@@ -64,7 +68,12 @@ def f1_score(gt, pred):
 def loaders(args, split):
     print('Loading features')
     # Load features
-    load_split = 'train' if 'train' in split else split
+    if 'train' in split:
+        load_split = 'train'
+    elif 'validate' in split:
+        load_split = 'validate'
+    else:
+        load_split = split
     if len(args.feature_ids) == 0:
         feat_file_list = glob.glob('features/' + load_split + '/*.h5')
         exclude_filename = ['label', 'id_pairs', 'valid_index']
@@ -98,29 +107,30 @@ def loaders(args, split):
     data = np.concatenate(data, axis=1)
 
     # For train_val, load labels
-    if split == 'train_val':
+    if (not args.predict) or (split in ['train_val', 'validate_val']):
         print('Loading labels')
-        with h5py.File('features/train/label.h5', 'r') as f:
+        with h5py.File('features/' + load_split + '/label.h5', 'r') as f:
             label = f['label'][:]
             sep = f['sep'][:]
         assert data.shape[0] == label.shape[0], 'lengths of feature and label not equal'
-        # assert np.all(sep == sep_data), 'sep of label not the same with sep of features'
+        assert np.all(sep == sep_data), 'sep of label not the same with sep of features'
         sep = np.concatenate([[0], sep])
-        names_trainset = json.load(open('data/assignment_train.json'))
-        names_trainset = sorted(names_trainset.keys())
+        names_all = json.load(open('data/assignment_' + load_split + '.json'))
+        names_all = sorted(names_all.keys())
         index = []
-        for i, name in enumerate(names_trainset):
+        for i, name in enumerate(names_all):
             index.append({'name':name, 'start':sep[i], 'end':sep[i+1]})
 
         # Split names into train and val split
-        if osp.exists(args.name_split_file):
-            name_split = json.load(open(args.name_split_file))
+        name_split_file = osp.join('data', load_split, 'split_1fold.json')
+        if osp.exists(name_split_file):
+            name_split = json.load(open(name_split_file))
             names_train, names_val = name_split['train'], name_split['val']
         else:
-            nb_names_train = int(np.ceil(len(names_trainset) * args.name_split_train_ratio))
-            names_train, names_val = names_trainset[:nb_names_train], names_trainset[nb_names_train:]
+            nb_names_train = int(np.ceil(len(names_all) * args.name_split_train_ratio))
+            names_train, names_val = names_all[:nb_names_train], names_all[nb_names_train:]
             name_split = {'train':names_train, 'val':names_val}
-            with open(args.name_split_file, 'w') as f:
+            with open(name_split_file, 'w') as f:
                 json.dump(name_split, f)
 
         # Split data into train and val
@@ -131,13 +141,13 @@ def loaders(args, split):
         print('Loaded #train: %d, #val: %d' % (len(index_train), len(index_val)))
 
         # Leave out samples with missing data
-        if args.remove_missing:
-            print('Removing samples with missing data')
-            with h5py.File('features/train/valid_index.h5', 'r') as f:
-                valid_index = f['valid_index'][:].astype(np.bool)
-            index_train = index_train[valid_index[index_train]]
-            index_val = index_val[valid_index[index_val]]
-            print('After removing missing data, #train: %d, #val: %d' % (len(index_train), len(index_val)))
+        # if args.remove_missing:
+        #     print('Removing samples with missing data')
+        #     with h5py.File('features/train/valid_index.h5', 'r') as f:
+        #         valid_index = f['valid_index'][:].astype(np.bool)
+        #     index_train = index_train[valid_index[index_train]]
+        #     index_val = index_val[valid_index[index_val]]
+        #     print('After removing missing data, #train: %d, #val: %d' % (len(index_train), len(index_val)))
             
         # Resample step 1: filter out samples that are all zeros
         # if (not args.eval) and (not args.predict):
@@ -165,18 +175,14 @@ def loaders(args, split):
         print('Feature size: %d, %d' % data.shape)
 
     if args.predict:
-        if split == 'train_val':
+        if split in ['train_val', 'validate_val']:
             sep = sep[1:]
             sep = sep[len(names_train):] - sep[len(names_train) - 1]
             data = data['val']
             names = names_val
         else:
-            # TODO for val and test split
             sep = sep_data
-            if split == 'train':
-                names = sorted(json.load(open('data/assignment_train.json')).keys())
-            else:
-                names = None
+            names = sorted(json.load(open('data/assignment_' + load_split + '.json')).keys())
         return data, sep, names
     else:
         return data, label
@@ -189,7 +195,7 @@ def train(args):
     ensemble several random forests
     '''
     # Load data
-    data, label = loaders(args, 'train_val')
+    data, label = loaders(args, args.train_split)
     data_train, label_train, data_val, label_val = data['train'], label['train'], data['val'], label['val']
 
     # Initialize classifier
@@ -242,7 +248,7 @@ def train(args):
 def evaluate(args):
     # Load data
     args.nb_samples = -1 # no resampling in evaluation
-    data, label = loaders(args, 'train_val')
+    data, label = loaders(args, args.eval_split)
     data, label = data['val'], label['val']
     # data, label = data['train'], label['train']
 
@@ -309,12 +315,15 @@ if __name__ == '__main__':
     args = parse_args()
     retrain_flag = np.any([not osp.exists(osp.join('models', model_id + '.model')) for model_id in args.model_ids])
     if args.retrain:
+        print('Train on ' + args.train_split + ' split')
         train(args)
     elif args.eval:
         assert retrain_flag == False, 'Not all models are trained'
+        print('Eval on ' + args.eval_split + ' split')
         evaluate(args)
     elif args.predict:
         assert retrain_flag == False, 'Not all models are trained'
+        print('Predict on ' + args.predict_split + ' split')
         predict(args)
     else:
         print('Nothing to do')

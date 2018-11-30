@@ -140,6 +140,14 @@ http://dpcg.d.airelinux.org:8000/edit/dedup/features/train/label.h5
 
 如果要查看预测结果中每个结果序号对应的id pairs，可以到features/train/id_pairs下查看。
 
+### 在validate集上操作
+训练：``./classifier --train_split validate --nb_samples 100000 --retrain``
+
+评价：``./classifier --eval --eval_split validate_val``
+
+预测：``./classifier --predict --predict_split validate``
+注意此处的split可选validate和validate_val，前者是整个验证集50个名字，后者是验证集中的验证的10个名字
+
 ### 第四步：author assignment
 
 ### 第五步：评价结果
