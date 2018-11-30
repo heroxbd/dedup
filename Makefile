@@ -43,6 +43,9 @@ data/$(DS)/dual/%.csv: data/$(DS)/author/%.csv
 	mkdir -p $(dir $@)
 	./dual_marry.py $^ -o $@
 
+data/$(DS)/venue_idf.csv: $($(DS)_names:%=data/$(DS)/venue/%.csv)
+	./IDF.py $^ -o $@ --field venue
+
 # for word2vec
 data/$(DS)/ia.csv: $($(DS)_names:%=data/$(DS)/item/%.csv) $($(DS)_names:%=data/$(DS)/abstract/%.csv)
 	./combine-at.R $($(DS)_names:%=data/$(DS)/item/%.csv) --abstract $($(DS)_names:%=data/$(DS)/abstract/%.csv) -o $@
