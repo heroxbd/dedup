@@ -54,7 +54,7 @@ features/d2v_doublet.model: data/train/ia.csv data/validate/ia.csv
 features/train/doc2vec_singlet_native/%.h5: data/train/item/%.csv features/d2v_singlet.model
 	mkdir -p $(dir $@)
 	python doc2vec_pair_native.py -i $< -o $@ -m $(word 2,$^) > $@.log
-features/train/doc2vec_doublet_native/%.h5: data/train/item/%.csv features/d2v_doublet.model
+features/$(DS)/doc2vec_doublet_native/%.h5: data/$(DS)/item/%.csv features/d2v_doublet.model
 	mkdir -p $(dir $@)
 	python doc2vec_pair_native.py -i $< -o $@ -m $(word 2,$^) > $@.log
 
