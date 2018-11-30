@@ -61,7 +61,13 @@ features/train/doc2vec_doublet_native/%.h5: data/train/item/%.csv features/d2v_d
 data/$(DS)/uniglue/%.csv: data/$(DS)/item/%.csv data/$(DS)/author/%.csv
 	mkdir -p $(dir $@)
 	./uni_glue_baseline.R $< --author $(word 2,$^) -o $@
+data/$(DS)/coauthor/%.csv: data/$(DS)/author/%.csv
+	mkdir -p $(dir $@)
+	./coauthor_glue.R $< -o $@
+
 data/uni_glue_${DS}.json: $($(DS)_names:%=data/$(DS)/uniglue/%.csv)
+	./org_bag.py $^ -o $@ --field uniglue
+data/coauthor_glue_${DS}.json: $($(DS)_names:%=data/$(DS)/coauthor/%.csv)
 	./org_bag.py $^ -o $@ --field uniglue
 
 data/$(DS)/author/%.csv: data/$(DS)/author0/%.csv
