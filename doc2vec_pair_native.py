@@ -18,9 +18,14 @@ the output file will be saved in /features/authorName_doc2vec.h5
 
 import argparse
 psr = argparse.ArgumentParser("word2vec feature engineer")
-psr.add_argument("-i", default='data/train/item/li_ma.csv', dest='ipt', help="input")
-psr.add_argument("-m", default='features/d2v_singlet.model', dest='model_path', help="input")
-psr.add_argument("-o", default='features/train/doc2vec_singlet_native/li_ma.h5', dest='opt', help="output")
+#psr.add_argument("-i", default='data/train/item/li_ma.csv', dest='ipt', help="input")
+#psr.add_argument("-m", default='features/d2v_singlet.model', dest='model_path', help="input")
+#psr.add_argument("-a", default='data/train/ia.csv', dest='ia_csv', help="input")
+#psr.add_argument("-o", default='features/train/doc2vec_singlet_native/li_ma.h5', dest='opt', help="output")
+psr.add_argument("-i", default='data/validate/item/c_c_lin.csv', dest='ipt', help="input")
+psr.add_argument("-m", default='features/d2v_doublet.model', dest='model_path', help="input")
+psr.add_argument("-a", default='data/validate/ia.csv', dest='ia_csv', help="input")
+psr.add_argument("-o", default='features/validate/doc2vec_doublet_native/c_c_lin.h5', dest='opt', help="output")
 args = psr.parse_args()
 
 import pandas as pd
@@ -33,7 +38,7 @@ import os
 
 # === Specify major parameters ================================================
 #au = pd.read_csv(args.ipt)
-item_file_name = 'data/train/ia.csv' # the id-title-abstract data at /data/ia.csv
+item_file_name = args.ia_csv # the id-title-abstract data at /data/ia.csv
 input_file_path = args.ipt # the file is read at /data/*.csv
 output_file_path = args.opt # the file will be save at /features/*.h5
 model_path = args.model_path
@@ -117,12 +122,11 @@ for (al, bl) in it.combinations(au.groupby('id')['id'],2):
         progress = progress + progress_step
 
 print(len(dl))
-x = np.array(list(dl))
 
-'''
-# (original codes in c_ort.py)output .h5:
-with h5py.File(args.opt, 'w') as opt:
-    opt.create_dataset('c_{}'.format(args.field), data=x, compression="gzip", shuffle=True)
-'''
+dsn = args.opt.split('/')[-2] # doc2vec_singlet_native
+x = np.array(dl, dtype=[('{}_distance'.format(dsn), 'f4'), 
+                        ('{}_angle'.format(dsn), 'f4'), 
+                        ('{}_length'.format(dsn), 'f4')])
+
 with h5py.File(output_file_path, 'w') as opt:
-    opt.create_dataset('doc2vecdata', data=x, compression="gzip", shuffle=True)
+    opt.create_dataset(dsn, data=x, compression="gzip", shuffle=True)
