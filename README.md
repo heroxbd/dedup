@@ -154,7 +154,11 @@ http://dpcg.d.airelinux.org:8000/edit/dedup/features/train/label.h5
 将结果保存成和assignment_train.json一样的格式，执行``./evaluate.py *.json``即可输出precision, recall和f1。注意结果的名字必须在train集里面，才能进行离线评测。
 
 ### 参考代码库
-https://github.com/zh1z/disambiguation
+唐杰的代码
+https://github.com/neozhangthe1/disambiguation
+
 https://github.com/glouppe/paper-author-disambiguation
+
 https://github.com/mozerfazer/AuthorNameDisambiguation
+
 https://github.com/xujunrt/Author-Disambiguation
