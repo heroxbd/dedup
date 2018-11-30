@@ -179,7 +179,10 @@ def loaders(args, split):
         else:
             # TODO for val and test split
             sep = sep_data
-            names = None
+            if split == 'train':
+                names = sorted(json.load(open('data/assignment_train.json')).keys())
+            else:
+                names = None
         return data, sep, names
     else:
         return data, label
