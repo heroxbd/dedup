@@ -2,7 +2,7 @@
 import argparse
 psr = argparse.ArgumentParser("baseline solution")
 psr.add_argument("-o", dest='opt', help="output")
-psr.add_argument('ipt', help="input")
+psr.add_argument('ipt', nargs="+", help="input")
 psr.add_argument('--field', default='org', help="the field to count common entries in")
 args = psr.parse_args()
 
