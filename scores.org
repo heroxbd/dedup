@@ -1,8 +1,9 @@
 * scores
-  | solutions         | train offline |       | validate online |
-  |                   |        binary | macro |                 |
-  |-------------------+---------------+-------+-----------------|
-  | all-in-1 baseline |         0.285 |       |           0.325 |
-  | venue bag         |         0.022 | 0.017 |           0.204 |
-  | org bag           |         0.031 | 0.021 |           0.340 |
-  | uniglue           |         0.306 | 0.157 |           0.410 |
+  | solutions         | train offline |           |        |       | validate online |
+  |                   |        binary | precision | recall | macro |                 |
+  |-------------------+---------------+-----------+--------+-------+-----------------|
+  | all-in-1 baseline |         0.285 |           |        |       |           0.325 |
+  | venue bag         |         0.022 |           |        | 0.017 |           0.204 |
+  | org bag           |         0.031 |           |        | 0.021 |           0.340 |
+  | uniglue           |         0.306 |     0.230 |  0.459 | 0.157 |           0.410 |
+  | coauthor          |               |           |        |       |                 |
