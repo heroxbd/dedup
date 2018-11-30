@@ -69,7 +69,10 @@ reader_author = reader.loc[reader['auid'] == author_name]
 corpus_author = []
 id_list_author = []
 for num in range(len(reader_author)):
-    corpus_author.append( str(reader_author.iloc[num]['title']) + str(reader_author.iloc[num]['abstract']) )
+    if 'abstract' in dict(reader_author.iloc[num]):
+        corpus_author.append( str(reader_author.iloc[num]['title']) + str(reader_author.iloc[num]['abstract']) )
+    else:
+        corpus_author.append( str(reader_author.iloc[num]['title']) )
     id_list_author.append( reader_author.iloc[num]['id'] )
 
 au = pd.read_csv(input_file_path) # author associated file
@@ -114,11 +117,12 @@ for (al, bl) in it.combinations(au.groupby('id')['id'],2):
         progress = progress + progress_step
 
 print(len(dl))
+x = np.array(list(dl))
 
-dsn = args.opt.split('/')[-2] # doc2vec_singlet_native
-x = np.array(dl, dtype=[('{}_distance'.format(dsn), 'f4'), 
-                        ('{}_angle'.format(dsn), 'f4'), 
-                        ('{}_length'.format(dsn), 'f4')])
-
+'''
+# (original codes in c_ort.py)output .h5:
+with h5py.File(args.opt, 'w') as opt:
+    opt.create_dataset('c_{}'.format(args.field), data=x, compression="gzip", shuffle=True)
+'''
 with h5py.File(output_file_path, 'w') as opt:
-    opt.create_dataset(dsn, data=x, compression="gzip", shuffle=True)
+    opt.create_dataset('doc2vecdata', data=x, compression="gzip", shuffle=True)
