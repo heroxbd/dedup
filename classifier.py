@@ -83,19 +83,13 @@ def loaders(args, split):
         time_start = time.time()
         with h5py.File(feat_file, 'r') as f:
             feat = f[feat_id][:]
-            if len(feat.dtype) > 1:
-                # if features are saved as numpy structure
-                for field in feat.dtype.names:
-                    feat_field = feat[field]
-                    # for concatenate, add axis 1
-                    if len(feat_field.shape) == 1:
-                        feat_field = feat_field[:, np.newaxis]
-                    data.append(feat_field)
-            else:
+            # if features are saved as numpy structure
+            for field in feat.dtype.names:
+                feat_field = feat[field]
                 # for concatenate, add axis 1
-                if len(feat.shape) == 1:
-                    feat = feat[:, np.newaxis]
-                data.append(feat)
+                if len(feat_field.shape) == 1:
+                    feat_field = feat_field[:, np.newaxis]
+                data.append(feat_field)
             if sep_data is None:
                 sep_data = f['sep'][:]
             else:
