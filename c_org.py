@@ -26,7 +26,7 @@ def f(al,bl):
         IDF = sum(IDF['IDF']*np.array(list(commondict.values())))
     return overlap, sumlength, IDF, TF
 
-dl = ((sum((Counter(al[1]) & Counter(bl[1])).values()), len(al[1])+len(bl[1]))
+dl = (f(al,bl)
       for (al, bl) in it.combinations(au.groupby('id')[args.field],2))
 x = np.array(list(dl), dtype='f4')
 
