@@ -148,10 +148,13 @@ http://dpcg.d.airelinux.org:8000/edit/dedup/features/train/label.h5
 预测：``./classifier.py --predict --predict_split validate``
 注意此处的split可选validate和validate_val，前者是整个验证集50个名字，后者是验证集中的验证的10个名字
 
+### 检查特征
+``./check_features.py --split validate``可输出每个validate特征与label的皮尔森相关系数，split可选train或validate
+
 ### 第四步：author assignment
 
 ### 第五步：评价结果
-将结果保存成和assignment_train.json一样的格式，执行``./evaluate.py *.json``即可输出precision, recall和f1。注意结果的名字必须在train集里面，才能进行离线评测。
+将结果保存成和assignment_train.json一样的格式，执行``./evaluate.py *.json --split validate``即可输出结果json中包含的名字对应的precision, recall和f1。split可选train或validate
 
 ### 参考代码库
 唐杰的代码
