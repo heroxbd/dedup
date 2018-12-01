@@ -169,7 +169,10 @@ result/validate_val/kruskal/%.json: output/validate_val/%.h5 features/validate/i
 result/validate_val/likelihood/%.json: output/validate_val/%.h5 result/validate_val/kruskal/%.json
 	mkdir -p $(dir $@)
 	./likelihood.R $< -o $@ --id features/validate/id_pairs/$*.h5 --kruskal $(word 2,$^)
-result/validate_val.json: 
+
+validate_val_names:=$(shell jq -r '.val[]' < data/validate/split_1fold.json)
+result/validate_val.json: $(validate_val_names:%=result/validate_val/likelihood/%.json)
+	./merge_final_assignment.R $^ -o $@
 
 define merge-tpl
 features/$(DS)/$(1).h5: $$($(DS)_names:%=features/$(DS)/$(1)/%.h5)
