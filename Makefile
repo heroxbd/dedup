@@ -28,13 +28,13 @@ data/%.zip: data/%.json
 	zip -9 $@ result.json
 
 data/$(DS)/author0/%.csv: data/$(DS)/csv_flag
-	:
+	touch $@
 data/$(DS)/item0/%.csv: data/$(DS)/csv_flag
-	:
+	touch $@
 data/$(DS)/abstract/%.csv: data/$(DS)/csv_flag
-	:
+	touch $@
 data/$(DS)/keywords/%.csv: data/$(DS)/csv_flag
-	:
+	touch $@
 data/$(DS)/csv_flag: data/pubs_$(DS).json
 	mkdir -p $(dir $@){item0,author0,abstract,keywords}
 	./data_transfer.R $^ -o $(dir $@)
@@ -52,12 +52,17 @@ data/$(DS)/ia.csv: $($(DS)_names:%=data/$(DS)/item/%.csv) $($(DS)_names:%=data/$
 
 features/d2v_singlet.model: data/train/ia.csv
 	python doc2vec.py -i $^ -o $@
-features/d2v_doublet.model: data/train/ia.csv data/validate/ia.csv
+features/d2v_doublet.model: data/train/ia.csv data/validate0/ia.csv
+	python doc2vec.py -i $^ -o $@
+features/d2v_triplet.model: data/train/ia.csv data/validate0/ia.csv data/test/ia.csv
 	python doc2vec.py -i $^ -o $@
 features/train/doc2vec_singlet_native/%.h5: data/train/item/%.csv features/d2v_singlet.model
 	mkdir -p $(dir $@)
 	python doc2vec_pair_native.py -i $< -o $@ -m $(word 2,$^) > $@.log
 features/$(DS)/doc2vec_doublet_native/%.h5: data/$(DS)/item/%.csv features/d2v_doublet.model
+	mkdir -p $(dir $@)
+	python doc2vec_pair_native.py -i $< -o $@ -m $(word 2,$^) > $@.log
+features/$(DS)/doc2vec_triplet_native/%.h5: data/$(DS)/item/%.csv features/d2v_triplet.model
 	mkdir -p $(dir $@)
 	python doc2vec_pair_native.py -i $< -o $@ -m $(word 2,$^) > $@.log
 
@@ -133,7 +138,9 @@ features/$(DS)/$(1).h5: $$($(DS)_names:%=features/$(DS)/$(1)/%.h5)
 	./merge.py $$^ -o $$@ --field $(1)
 endef
 
-paired_features:=c_keywords c_org shortpath diff_year id_pairs valid_index c_title c_venue doc2vec_singlet_native doc2vec_doublet_native label
+paired_features:=c_keywords c_org shortpath diff_year id_pairs valid_index c_title
+paired_features+=c_venue doc2vec_singlet_native doc2vec_doublet_native label
+paired_features+=doc2vec_triplet_native
 
 $(foreach k,$(paired_features),$(eval $(call merge-tpl,$(k))))
 
