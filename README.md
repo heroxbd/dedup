@@ -154,7 +154,7 @@ http://dpcg.d.airelinux.org:8000/edit/dedup/features/train/label.h5
 ### 第四步：author assignment
 
 ### 第五步：评价结果
-将结果保存成和assignment_train.json一样的格式，执行``./evaluate.py *.json --split validate``即可输出结果json中包含的名字对应的precision, recall和f1。split可选train或validate
+将结果保存成和assignment_train.json一样的格式，执行``./evaluate.py *.json``即可输出结果json中包含的名字对应的precision, recall和f1。
 
 ### 参考代码库
 唐杰的代码

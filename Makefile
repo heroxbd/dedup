@@ -1,12 +1,31 @@
 SHELL:=/bin/bash
 DS:=train
-# data/pubs_$(DS).json
--include $(DS)_names.mk
-ifndef $(DS)_names
-$(DS)_names:=$(shell jq -r 'keys[]' < data/pubs_$(DS).json)
-$(DS)_names.mk:
-	echo '$(DS)_names:=$($(DS)_names)' > $@
+
+DSP:=train validate0 test
+DSA:=train validate validate0 test
+-include $(wildcard *_names.mk)
+
+define load-tpl
+$(1)_names:=$(shell jq -r 'keys[]' < data/pubs_$(1).json)
+$(1)_names.mk:
+	echo '$(1)_names:=$($(1)_names)' > $@
+endef
+
+ifndef train_names
+$(call load-tpl,train)
 endif
+ifndef validate_names
+$(call load-tpl,validate)
+endif
+ifndef validate0_names
+$(call load-tpl,validate0)
+endif
+ifndef test_names
+$(call load-tpl,test)
+endif
+
+.PHONY: prepare
+prepare: $(DSA:%=%_names.mk)
 
 assignment_validate.zip: assignment_validate.json
 	ln -sf $^ result.json
@@ -27,28 +46,60 @@ data/%.zip: data/%.json
 	ln -sf $^ result.json
 	zip -9 $@ result.json
 
-data/$(DS)/author0/%.csv: data/$(DS)/csv_flag
-	touch $@
-data/$(DS)/item0/%.csv: data/$(DS)/csv_flag
-	touch $@
-data/$(DS)/abstract/%.csv: data/$(DS)/csv_flag
-	touch $@
-data/$(DS)/keywords/%.csv: data/$(DS)/csv_flag
-	touch $@
-data/$(DS)/csv_flag: data/pubs_$(DS).json
-	mkdir -p $(dir $@){item0,author0,abstract,keywords}
-	./data_transfer.R $^ -o $(dir $@)
-	touch $@
-data/$(DS)/dual/%.csv: data/$(DS)/author/%.csv
-	mkdir -p $(dir $@)
-	./dual_marry.py $^ -o $@
-
-data/$(DS)/venue_idf.csv: $($(DS)_names:%=data/$(DS)/venue/%.csv)
+data/venue_idf.csv: $(foreach D,${DSP},$($(D)_names:%=data/$(D)/venue/%.csv))
 	./IDF.py $^ -o $@ --field venue
+data/org_idf.csv: $(foreach D,${DSP},$($(D)_names:%=data/$(D)/org/%.csv))
+	./IDF.py $^ -o $@ --field org
+data/title_idf.csv: $(foreach D,${DSP},$($(D)_names:%=data/$(D)/title/%.csv))
+	./IDF.py $^ -o $@ --field title
+data/keywords_idf.csv: $(foreach D,${DSP},$($(D)_names:%=data/$(D)/keywords/%.csv))
+	./IDF.py $^ -o $@ --field keywords
 
-# for word2vec
-data/$(DS)/ia.csv: $($(DS)_names:%=data/$(DS)/item/%.csv) $($(DS)_names:%=data/$(DS)/abstract/%.csv)
-	./combine-at.R $($(DS)_names:%=data/$(DS)/item/%.csv) --abstract $($(DS)_names:%=data/$(DS)/abstract/%.csv) -o $@
+define DS-tpl
+data/$(1)/author0/%.csv: data/$(1)/csv_flag
+	touch $$@
+data/$(1)/item0/%.csv: data/$(1)/csv_flag
+	touch $$@
+data/$(1)/abstract/%.csv: data/$(1)/csv_flag
+	touch $$@
+data/$(1)/keywords/%.csv: data/$(1)/csv_flag
+	touch $$@
+data/$(1)/csv_flag: data/pubs_$(1).json
+	mkdir -p $$(dir $$@){item0,author0,abstract,keywords}
+	./data_transfer.R $$^ -o $$(dir $$@)
+	touch $$@
+data/$(1)/dual/%.csv: data/$(1)/author/%.csv
+	mkdir -p $$(dir $$@)
+	./dual_marry.py $$^ -o $$@
+data/$(1)/ia.csv: $($(1)_names:%=data/$(1)/item/%.csv) $($(1)_names:%=data/$(1)/abstract/%.csv)
+	./combine-at.R $($(1)_names:%=data/$(1)/item/%.csv) --abstract $($(1)_names:%=data/$(1)/abstract/%.csv) -o $$@
+data/$(1)/uniglue/%.csv: data/$(1)/item/%.csv data/$(1)/author/%.csv
+	mkdir -p $$(dir $$@)
+	./uni_glue_baseline.R $$< --author $$(word 2,$$^) -o $$@
+data/$(1)/coauthor/%.csv: data/$(1)/author/%.csv
+	mkdir -p $$(dir $$@)
+	./coauthor_glue.R $$< -o $$@
+data/$(1)/author/%.csv: data/$(1)/author0/%.csv
+	mkdir -p $$(dir $$@)
+	./venue_author_preprocess.R $$^ -o $$@ --field author
+
+data/$(1)/item/%.csv: data/$(1)/item0/%.csv
+	mkdir -p $$(dir $$@)
+	./venue_author_preprocess.R $$^ -o $$@ --field item
+
+data/$(1)/title/%.csv: data/$(1)/item/%.csv
+	mkdir -p $$(dir $$@)
+	./wordlist.py $$^ -o $$@ --field title
+data/$(1)/venue/%.csv: data/$(1)/item/%.csv
+	mkdir -p $$(dir $$@)
+	./wordlist.py $$^ -o $$@ --field venue
+data/$(1)/org/%.csv: data/$(1)/author/%.csv
+	mkdir -p $$(dir $$@)
+	./wordlist.py $$^ -o $$@ --field org
+endef
+
+# $(eval $(call DS-tpl,$(DS)))
+$(foreach D,$(DSA),$(eval $(call DS-tpl,$(D))))
 
 features/d2v_singlet.model: data/train/ia.csv
 	python doc2vec.py -i $^ -o $@
@@ -56,42 +107,20 @@ features/d2v_doublet.model: data/train/ia.csv data/validate0/ia.csv
 	python doc2vec.py -i $^ -o $@
 features/d2v_triplet.model: data/train/ia.csv data/validate0/ia.csv data/test/ia.csv
 	python doc2vec.py -i $^ -o $@
-features/train/doc2vec_singlet_native/%.h5: data/train/item/%.csv features/d2v_singlet.model
+features/train/doc2vec_singlet_native/%.h5: data/train/item/%.csv features/d2v_singlet.model data/train/ia.csv
 	mkdir -p $(dir $@)
-	python doc2vec_pair_native.py -i $< -o $@ -m $(word 2,$^) > $@.log
-features/$(DS)/doc2vec_doublet_native/%.h5: data/$(DS)/item/%.csv features/d2v_doublet.model
+	python doc2vec_pair_native.py -i $< -o $@ -m $(word 2,$^) -a $(word 3,$^) > $@.log
+features/$(DS)/doc2vec_doublet_native/%.h5: data/$(DS)/item/%.csv features/d2v_doublet.model data/$(DS)/ia.csv
 	mkdir -p $(dir $@)
-	python doc2vec_pair_native.py -i $< -o $@ -m $(word 2,$^) > $@.log
-features/$(DS)/doc2vec_triplet_native/%.h5: data/$(DS)/item/%.csv features/d2v_triplet.model
+	python doc2vec_pair_native.py -i $< -o $@ -m $(word 2,$^) -a $(word 3,$^) > $@.log
+features/$(DS)/doc2vec_triplet_native/%.h5: data/$(DS)/item/%.csv features/d2v_triplet.model data/$(DS)/ia.csv
 	mkdir -p $(dir $@)
-	python doc2vec_pair_native.py -i $< -o $@ -m $(word 2,$^) > $@.log
-
-data/$(DS)/uniglue/%.csv: data/$(DS)/item/%.csv data/$(DS)/author/%.csv
-	mkdir -p $(dir $@)
-	./uni_glue_baseline.R $< --author $(word 2,$^) -o $@
-data/$(DS)/coauthor/%.csv: data/$(DS)/author/%.csv
-	mkdir -p $(dir $@)
-	./coauthor_glue.R $< -o $@
+	python doc2vec_pair_native.py -i $< -o $@ -m $(word 2,$^) -a $(word 3,$^) > $@.log
 
 data/uni_glue_${DS}.json: $($(DS)_names:%=data/$(DS)/uniglue/%.csv)
 	./org_bag.py $^ -o $@ --field uniglue
 data/coauthor_glue_${DS}.json: $($(DS)_names:%=data/$(DS)/coauthor/%.csv)
 	./org_bag.py $^ -o $@ --field uniglue
-
-data/$(DS)/author/%.csv: data/$(DS)/author0/%.csv
-	mkdir -p $(dir $@)
-	./venue_author_preprocess.R $^ -o $@ --field author
-
-data/$(DS)/item/%.csv: data/$(DS)/item0/%.csv
-	mkdir -p $(dir $@)
-	./venue_author_preprocess.R $^ -o $@ --field item
-
-data/${DS}/title/%.csv: data/$(DS)/item/%.csv
-	mkdir -p $(dir $@)
-	./wordlist.py $^ -o $@ --field title
-data/${DS}/venue/%.csv: data/$(DS)/item/%.csv
-	mkdir -p $(dir $@)
-	./wordlist.py $^ -o $@ --field venue
 
 features/$(DS)/shortpath/%.h5: data/$(DS)/author/%.csv
 	mkdir -p $(dir $@)
@@ -101,7 +130,7 @@ features/$(DS)/shortpath/%.h5: data/$(DS)/author/%.csv
 #	mkdir -p $(dir $@)
 #	./c_org.py $< -o $@ --field authorFN
 
-features/$(DS)/c_org/%.h5: data/$(DS)/author/%.csv
+features/$(DS)/c_org/%.h5: data/$(DS)/org/%.csv
 	mkdir -p $(dir $@)
 	./c_org.py $^ -o $@
 
@@ -132,6 +161,11 @@ features/$(DS)/valid_index/%.h5: data/$(DS)/keywords/%.csv
 features/$(DS)/label/%.h5: data/$(DS)/item/%.csv
 	mkdir -p $(dir $@)
 	./label.py $^ -o $@ --ref data/assignment_$(DS).json
+
+result/validate_val/kruskal/%.json: output/validate_val/%.h5 features/validate/id_pairs/%.h5
+	./MT_Kruskal.R $< -o $@ --id $(word 2,$^)
+result/validate_val/likelihood/%.json: output/validate_val/%.h5 features/validate/id_pairs/%.h5 result/validate_val/kruskal/%.json
+	./likelihood.R $< -o $@ --id $(word 2,$^) --kruskal $(word 3,$^)
 
 define merge-tpl
 features/$(DS)/$(1).h5: $$($(DS)_names:%=features/$(DS)/$(1)/%.h5)
