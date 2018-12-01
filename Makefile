@@ -132,19 +132,19 @@ features/$(DS)/shortpath/%.h5: data/$(DS)/author/%.csv
 
 features/$(DS)/c_org/%.h5: data/$(DS)/org/%.csv
 	mkdir -p $(dir $@)
-	./c_org.py $^ -o $@ --idf data/$(DS)/org_idf.csv
+	./c_org.py $^ -o $@ --idf data/org_idf.csv
 
 features/$(DS)/c_title/%.h5: data/$(DS)/title/%.csv
 	mkdir -p $(dir $@)
-	./c_org.py $^ -o $@ --field title --idf data/$(DS)/title_idf.csv
+	./c_org.py $^ -o $@ --field title --idf data/title_idf.csv
 
 features/$(DS)/c_venue/%.h5: data/$(DS)/venue/%.csv
 	mkdir -p $(dir $@)
-	./c_org.py $^ -o $@ --field venue --idf data/$(DS)/venue_idf.csv
+	./c_org.py $^ -o $@ --field venue --idf data/venue_idf.csv
 
 features/$(DS)/c_keywords/%.h5: data/$(DS)/keywords/%.csv
 	mkdir -p $(dir $@)
-	./c_org.py $^ -o $@ --field keywords --idf data/$(DS)/keywords_idf.csv
+	./c_org.py $^ -o $@ --field keywords --idf data/keywords_idf.csv
 
 features/$(DS)/diff_year/%.h5: data/$(DS)/item/%.csv
 	mkdir -p $(dir $@)

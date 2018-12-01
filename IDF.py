@@ -13,6 +13,6 @@ wordlist = pd.concat([pd.read_csv(f) for f in args.ipt])
 
 # this is expanded to be used with keywords as well
 wordcount = Counter(wordlist[args.field].values)
-IDF = len(wordlist)/np.array(tuple(wordcount.values()))
+IDF = float(len(wordlist))/np.array(tuple(wordcount.values()))
 rst = pd.DataFrame({"IDF":IDF}, index=tuple(wordcount.keys()))
 rst.to_csv(args.opt)

@@ -16,14 +16,14 @@ IDFinput = pd.read_csv(args.idf, index_col = 0)
 
 def f(al,bl):
     commondict = Counter(al[1]) & Counter(bl[1])
-    TF = 1/(len(al[1])*len(bl[1]))
+    TF = 1/float(len(al[1])*len(bl[1]))
     overlap = sum(commondict.values())
     sumlength = len(al[1]) + len(bl[1])
     if commondict == Counter():
-        IDF = 1
+        IDF = 0
     else:
         IDF = IDFinput.loc[list(commondict.keys())]
-        IDF = sum(IDF['IDF']*np.array(list(commondict.values()))) + 1
+        IDF = sum(np.log(IDF['IDF']*(np.array(list(commondict.values()))) + 1))
     return overlap, sumlength, IDF, TF
 
 dl = (f(al,bl)
@@ -33,8 +33,8 @@ x = np.array(list(dl), dtype='f4')
 df = pd.DataFrame({'{}_overlap'.format(args.field): x[:,0], 
                    '{}_share_dummy'.format(args.field): x[:,0]!=0,
                    '{}_jaccard_similarity_metric'.format(args.field): x[:,0].astype('float32')/(x[:,1]-x[:,0]),
-                   '{}_logIDF'.format(args.field): np.log(x[:,2]),
-                   '{}_logTFIDF'.format(args.field): np.log(x[:,2])*np.log(x[:,3])
+                   '{}_logIDF'.format(args.field): x[:,2],
+                   '{}_logTFIDF'.format(args.field): x[:,2]*x[:,3]
                    }
 )
 
