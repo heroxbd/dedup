@@ -8,6 +8,7 @@ psr = argparse.ArgumentParser("baseline solution")
 psr.add_argument("-o", dest='opt', help="output")
 psr.add_argument('ipt', help="id ordering, should be something under item/")
 psr.add_argument('--ref', default="data/assignment_train.json", help="truth cluster")
+psr.add_argument('--field', default="label", help="dataset field")
 args = psr.parse_args()
 
 import pandas as pd, itertools as it, h5py, numpy as np, json, os
@@ -20,8 +21,8 @@ d = pd.concat([pd.DataFrame({"id":v, "seq":i}) for i, v in enumerate(lm)])
 
 # short circuit with the first elements.
 x = np.array([(al[1].values[0]==bl[1].values[0]) or (np.intersect1d(al[1].values,bl[1].values).size>0)
-              for (al,bl) in it.combinations(d.groupby('id')['seq'], 2)])
+              for (al,bl) in it.combinations(d.groupby('id')['seq'], 2)], dtype=[(args.field, 'f4')])
 
 # output .h5:
 with h5py.File(args.opt, 'w') as opt:
-    opt.create_dataset('label', data=x, compression="gzip", shuffle=True)
+    opt.create_dataset(args.field, data=x, compression="gzip", shuffle=True)

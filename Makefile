@@ -173,6 +173,9 @@ features/$(DS)/valid_index/%.h5: data/$(DS)/keywords/%.csv
 features/$(DS)/label/%.h5: data/$(DS)/item/%.csv
 	mkdir -p $(dir $@)
 	./label.py $^ -o $@ --ref data/assignment_$(DS).json
+features/$(DS)/uni_glue/%.h5: data/$(DS)/item/%.csv data/uni_glue_${DS}.json
+	mkdir -p $(dir $@)
+	./label.py $< -o $@ --ref $(word 2,$^) --field uni_glue
 
 result/validate_val/kruskal/%.json: output/validate_val/%.h5 features/validate/id_pairs/%.h5
 	mkdir -p $(dir $@)
@@ -197,6 +200,7 @@ endef
 paired_features:=c_keywords c_org shortpath diff_year id_pairs valid_index c_title
 paired_features+=c_venue doc2vec_singlet_native doc2vec_doublet_native label
 paired_features+=doc2vec_triplet_native sp_org sp_title sp_venue sp_keywords
+paired_features+=uni_glue
 
 $(foreach k,$(paired_features),$(eval $(call merge-tpl,$(k))))
 
