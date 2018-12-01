@@ -7,12 +7,12 @@ psr.add_argument('--field', default='org', help="the field to count common entri
 args = psr.parse_args()
 
 import pandas as pd, numpy as np
+from collections import Counter
 
 wordlist = pd.concat([pd.read_csv(f) for f in args.ipt])
 
-# # this is expanded to be used with keywords as well
-wordlist['count'] = np.ones((len(wordlist)))
-wordcount = wordlist.set_index([args.field, "id"]).count(level=args.field)
-IDF = len(wordlist)/wordcount
-
-IDF.to_csv(args.opt, index=False)
+# this is expanded to be used with keywords as well
+wordcount = Counter(wordlist[args.field].values)
+IDF = len(wordlist)/np.array(tuple(wordcount.values()))
+rst = pd.DataFrame({"IDF":IDF}, index=tuple(wordcount.keys()))
+rst.to_csv(args.opt)
