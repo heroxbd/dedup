@@ -56,11 +56,7 @@ for idx in range(len(distlist)):
 G=nx.Graph()
 G.add_nodes_from(nodes_list_unique_idx)
 G.add_edges_from(edge_list_clean)
-graphs = list(nx.connected_component_subgraphs(G))
-
-list_of_graphs_node_dict = []
-for idx in range(len(graphs)):
-    list_of_graphs_node_dict.append(graphs[idx]._node)
+length = dict(nx.all_pairs_dijkstra_path_length(G, weight="weight"))
 
 #print( nx.shortest_path_length(G, source = 0, target = 1, weight = 'weight')) # testing code
 
@@ -70,28 +66,13 @@ total_num = len(id_pair_list_a)
 progress = 0
 progress_step = 0.02
 for idx in range(len(id_pair_list_a)):
-    
     id_a = id_pair_list_a[idx]
     id_b = id_pair_list_b[idx]
     idx_a = nodes_list_unique.index(id_a)
     idx_b = nodes_list_unique.index(id_b)
-    
-    for idx in range( len(list_of_graphs_node_dict) ):
-        if list_of_graphs_node_dict[idx].__contains__(idx_a):
-            subgraph_containing_idx_a = idx
-        else:
-            pass
-        if list_of_graphs_node_dict[idx].__contains__(idx_b):
-            subgraph_containing_idx_b = idx
-        else:
-            pass
-        
-    if subgraph_containing_idx_a == subgraph_containing_idx_b:
-        dist_tmp = nx.shortest_path_length(graphs[subgraph_containing_idx_a], source = idx_a, target = idx_b, weight = 'weight')
-        if dist_tmp > 0:
-            dist.append(1/dist_tmp)
-        else:
-            dist.append(0.0)
+
+    if idx_b in length[idx_a]:
+        dist.append(1/length[idx_a][idx_b])
     else:
         dist.append(0.0)
     
