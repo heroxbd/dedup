@@ -1,18 +1,19 @@
+#!/usr/bin/env Rscript
 ## merge final assignment together 
 library(jsonlite)
 library(stringr)
-rm(list=ls())
-#path <- '/Users/ZLab/Downloads/Amine/validate'
-path <-'/Users/ZLab/Documents/Dropbox/test/result'
-setwd(path)
 
-assignment_file <- list.files(path)
+require(argparse)
+psr <- ArgumentParser(description="from similarity to cluster")
+psr$add_argument("ipt", nargs="+", help="pairwise similarity input to merge")
+psr$add_argument("-o", dest="opt", help="cluster output")
+args <- psr$parse_args()
+
+assignment_file <- args$ipt
 final_assignment <- list()
 
 for(n in 1: length(assignment_file)){
-        assignment <- read_json(paste0(path,'/',assignment_file[n]))
-        final_assignment[[n]] <- assignment
-        names(final_assignment[[n]]) <- c(str_replace_all(assignment_file[n], pattern = 'final_result_|.h5.json', replacement = ''))
-        }
+    final_assignment[[sub(".json", "", basename(assignment_file[n]))]] <- read_json(assignment_file[n], simplifyVector = TRUE)
+}
 
-write_json(final_assignment,  "final_assignment.json")
+write_json(final_assignment, args$opt)
