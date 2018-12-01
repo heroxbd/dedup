@@ -22,8 +22,8 @@ def f(al,bl):
     if commondict == Counter():
         IDF = 0
     else:
-        IDF = IDFinput.loc[list(commondict.keys())]
-        IDF = sum(np.log(IDF['IDF']*(np.array(list(commondict.values()))) + 1))
+        lu = np.array([IDFinput.loc[k][0] for k in commondict.keys()])
+        IDF = sum(np.log(lu*(np.array(list(commondict.values()))) + 1))
     return overlap, sumlength, IDF, TF
 
 dl = (f(al,bl)
