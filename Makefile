@@ -1,5 +1,5 @@
 SHELL:=/bin/bash
-DS:=train
+DS:=validate
 
 DSP:=train validate0 test
 DSA:=train validate validate0 test
