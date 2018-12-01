@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import argparse
-psr = argparse.ArgumentParser("baseline solution")
+psr = argparse.ArgumentParser("Intersection of 2 entities.")
 psr.add_argument('ipt', default='data/c_c_wang.csv', help="input")
 psr.add_argument("-o", dest='opt', help="output")
 psr.add_argument('--field', default='org', help="the field to count common entries in")
