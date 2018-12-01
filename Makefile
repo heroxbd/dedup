@@ -1,12 +1,31 @@
 SHELL:=/bin/bash
 DS:=train
-# data/pubs_$(DS).json
--include $(DS)_names.mk
-ifndef $(DS)_names
-$(DS)_names:=$(shell jq -r 'keys[]' < data/pubs_$(DS).json)
-$(DS)_names.mk:
-	echo '$(DS)_names:=$($(DS)_names)' > $@
+
+DSP:=train validate0 test
+DSA:=train validate validate0 test
+-include $(wildcard *_names.mk)
+
+define load-tpl
+$(1)_names:=$(shell jq -r 'keys[]' < data/pubs_$(1).json)
+$(1)_names.mk:
+	echo '$(1)_names:=$($(1)_names)' > $@
+endef
+
+ifndef train_names
+$(call load-tpl,train)
 endif
+ifndef validate_names
+$(call load-tpl,validate)
+endif
+ifndef validate0_names
+$(call load-tpl,validate0)
+endif
+ifndef test_names
+$(call load-tpl,test)
+endif
+
+.PHONY: prepare
+prepare: $(DSA:%=%_names.mk)
 
 assignment_validate.zip: assignment_validate.json
 	ln -sf $^ result.json
@@ -43,7 +62,7 @@ data/$(DS)/dual/%.csv: data/$(DS)/author/%.csv
 	mkdir -p $(dir $@)
 	./dual_marry.py $^ -o $@
 
-data/$(DS)/venue_idf.csv: $($(DS)_names:%=data/$(DS)/venue/%.csv)
+data/venue_idf.csv: $(foreach D,${DSP},$($(D)_names:%=data/$(D)/venue/%.csv))
 	./IDF.py $^ -o $@ --field venue
 
 # for word2vec
@@ -56,15 +75,15 @@ features/d2v_doublet.model: data/train/ia.csv data/validate0/ia.csv
 	python doc2vec.py -i $^ -o $@
 features/d2v_triplet.model: data/train/ia.csv data/validate0/ia.csv data/test/ia.csv
 	python doc2vec.py -i $^ -o $@
-features/train/doc2vec_singlet_native/%.h5: data/train/item/%.csv features/d2v_singlet.model
+features/train/doc2vec_singlet_native/%.h5: data/train/item/%.csv features/d2v_singlet.model data/train/ia.csv
 	mkdir -p $(dir $@)
-	python doc2vec_pair_native.py -i $< -o $@ -m $(word 2,$^) > $@.log
-features/$(DS)/doc2vec_doublet_native/%.h5: data/$(DS)/item/%.csv features/d2v_doublet.model
+	python doc2vec_pair_native.py -i $< -o $@ -m $(word 2,$^) -a $(word 3,$^) > $@.log
+features/$(DS)/doc2vec_doublet_native/%.h5: data/$(DS)/item/%.csv features/d2v_doublet.model data/$(DS)/ia.csv
 	mkdir -p $(dir $@)
-	python doc2vec_pair_native.py -i $< -o $@ -m $(word 2,$^) > $@.log
-features/$(DS)/doc2vec_triplet_native/%.h5: data/$(DS)/item/%.csv features/d2v_triplet.model
+	python doc2vec_pair_native.py -i $< -o $@ -m $(word 2,$^) -a $(word 3,$^) > $@.log
+features/$(DS)/doc2vec_triplet_native/%.h5: data/$(DS)/item/%.csv features/d2v_triplet.model data/$(DS)/ia.csv
 	mkdir -p $(dir $@)
-	python doc2vec_pair_native.py -i $< -o $@ -m $(word 2,$^) > $@.log
+	python doc2vec_pair_native.py -i $< -o $@ -m $(word 2,$^) -a $(word 3,$^) > $@.log
 
 data/$(DS)/uniglue/%.csv: data/$(DS)/item/%.csv data/$(DS)/author/%.csv
 	mkdir -p $(dir $@)
