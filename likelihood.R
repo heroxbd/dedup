@@ -53,22 +53,26 @@ likelihood <- function(i){
 
 # 此处需要优化成parallel 
 
-vapply(1:length(result_list), likelihood)
+laply(1:length(result_list), likelihood)
 
 for(k in 1:length(result_list)){
     likelihood_df$ll_hood[k] <- likelihood(k)
     cat(k,'\n')
 }
 #8:50开始
-plot(likelihood_df$ll_hood, likelihood_df$step)
+pdf(sub('.json', '.pdf', args$opt))
+plot(likelihood_df$ll_hood, type="l", xlab="step", ylab="loglik", 
+     main=sprintf("%s: %s steps", basename(args$opt), length(result_list)))
+dev.off()
+
 likelihood_df <- likelihood_df %>% arrange(desc(ll_hood)) 
 opt <- likelihood_df$step[1]
 node <- result_list[[opt]]$node
 group <- result_list[[opt]]$group
-result <- data.frame(cbind(node,group),stringsAsFactors = F)
+result <- data.frame(node,group)
 final_result <- list()
 
-for(l in 1: length(unique(result$group))){
+for(l in 1:length(unique(result$group))){
         final_result[[l]] <- result$node[result$group==unique(result$group)[l]]
 }
 max <- length(unlist(final_result))
