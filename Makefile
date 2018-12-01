@@ -46,28 +46,60 @@ data/%.zip: data/%.json
 	ln -sf $^ result.json
 	zip -9 $@ result.json
 
-data/$(DS)/author0/%.csv: data/$(DS)/csv_flag
-	touch $@
-data/$(DS)/item0/%.csv: data/$(DS)/csv_flag
-	touch $@
-data/$(DS)/abstract/%.csv: data/$(DS)/csv_flag
-	touch $@
-data/$(DS)/keywords/%.csv: data/$(DS)/csv_flag
-	touch $@
-data/$(DS)/csv_flag: data/pubs_$(DS).json
-	mkdir -p $(dir $@){item0,author0,abstract,keywords}
-	./data_transfer.R $^ -o $(dir $@)
-	touch $@
-data/$(DS)/dual/%.csv: data/$(DS)/author/%.csv
-	mkdir -p $(dir $@)
-	./dual_marry.py $^ -o $@
-
 data/venue_idf.csv: $(foreach D,${DSP},$($(D)_names:%=data/$(D)/venue/%.csv))
 	./IDF.py $^ -o $@ --field venue
+data/org_idf.csv: $(foreach D,${DSP},$($(D)_names:%=data/$(D)/org/%.csv))
+	./IDF.py $^ -o $@ --field org
+data/title_idf.csv: $(foreach D,${DSP},$($(D)_names:%=data/$(D)/title/%.csv))
+	./IDF.py $^ -o $@ --field title
+data/keywords_idf.csv: $(foreach D,${DSP},$($(D)_names:%=data/$(D)/keywords/%.csv))
+	./IDF.py $^ -o $@ --field keywords
 
-# for word2vec
-data/$(DS)/ia.csv: $($(DS)_names:%=data/$(DS)/item/%.csv) $($(DS)_names:%=data/$(DS)/abstract/%.csv)
-	./combine-at.R $($(DS)_names:%=data/$(DS)/item/%.csv) --abstract $($(DS)_names:%=data/$(DS)/abstract/%.csv) -o $@
+define DS-tpl
+data/$(1)/author0/%.csv: data/$(1)/csv_flag
+	touch $$@
+data/$(1)/item0/%.csv: data/$(1)/csv_flag
+	touch $$@
+data/$(1)/abstract/%.csv: data/$(1)/csv_flag
+	touch $$@
+data/$(1)/keywords/%.csv: data/$(1)/csv_flag
+	touch $$@
+data/$(1)/csv_flag: data/pubs_$(1).json
+	mkdir -p $$(dir $$@){item0,author0,abstract,keywords}
+	./data_transfer.R $$^ -o $$(dir $$@)
+	touch $$@
+data/$(1)/dual/%.csv: data/$(1)/author/%.csv
+	mkdir -p $$(dir $$@)
+	./dual_marry.py $$^ -o $$@
+data/$(1)/ia.csv: $($(1)_names:%=data/$(1)/item/%.csv) $($(1)_names:%=data/$(1)/abstract/%.csv)
+	./combine-at.R $($(1)_names:%=data/$(1)/item/%.csv) --abstract $($(1)_names:%=data/$(1)/abstract/%.csv) -o $$@
+data/$(1)/uniglue/%.csv: data/$(1)/item/%.csv data/$(1)/author/%.csv
+	mkdir -p $$(dir $$@)
+	./uni_glue_baseline.R $$< --author $$(word 2,$$^) -o $$@
+data/$(1)/coauthor/%.csv: data/$(1)/author/%.csv
+	mkdir -p $$(dir $$@)
+	./coauthor_glue.R $$< -o $$@
+data/$(1)/author/%.csv: data/$(1)/author0/%.csv
+	mkdir -p $$(dir $$@)
+	./venue_author_preprocess.R $$^ -o $$@ --field author
+
+data/$(1)/item/%.csv: data/$(1)/item0/%.csv
+	mkdir -p $$(dir $$@)
+	./venue_author_preprocess.R $$^ -o $$@ --field item
+
+data/$(1)/title/%.csv: data/$(1)/item/%.csv
+	mkdir -p $$(dir $$@)
+	./wordlist.py $$^ -o $$@ --field title
+data/$(1)/venue/%.csv: data/$(1)/item/%.csv
+	mkdir -p $$(dir $$@)
+	./wordlist.py $$^ -o $$@ --field venue
+data/$(1)/org/%.csv: data/$(1)/author/%.csv
+	mkdir -p $$(dir $$@)
+	./wordlist.py $$^ -o $$@ --field org
+endef
+
+# $(eval $(call DS-tpl,$(DS)))
+$(foreach D,$(DSA),$(eval $(call DS-tpl,$(D))))
 
 features/d2v_singlet.model: data/train/ia.csv
 	python doc2vec.py -i $^ -o $@
@@ -85,32 +117,10 @@ features/$(DS)/doc2vec_triplet_native/%.h5: data/$(DS)/item/%.csv features/d2v_t
 	mkdir -p $(dir $@)
 	python doc2vec_pair_native.py -i $< -o $@ -m $(word 2,$^) -a $(word 3,$^) > $@.log
 
-data/$(DS)/uniglue/%.csv: data/$(DS)/item/%.csv data/$(DS)/author/%.csv
-	mkdir -p $(dir $@)
-	./uni_glue_baseline.R $< --author $(word 2,$^) -o $@
-data/$(DS)/coauthor/%.csv: data/$(DS)/author/%.csv
-	mkdir -p $(dir $@)
-	./coauthor_glue.R $< -o $@
-
 data/uni_glue_${DS}.json: $($(DS)_names:%=data/$(DS)/uniglue/%.csv)
 	./org_bag.py $^ -o $@ --field uniglue
 data/coauthor_glue_${DS}.json: $($(DS)_names:%=data/$(DS)/coauthor/%.csv)
 	./org_bag.py $^ -o $@ --field uniglue
-
-data/$(DS)/author/%.csv: data/$(DS)/author0/%.csv
-	mkdir -p $(dir $@)
-	./venue_author_preprocess.R $^ -o $@ --field author
-
-data/$(DS)/item/%.csv: data/$(DS)/item0/%.csv
-	mkdir -p $(dir $@)
-	./venue_author_preprocess.R $^ -o $@ --field item
-
-data/${DS}/title/%.csv: data/$(DS)/item/%.csv
-	mkdir -p $(dir $@)
-	./wordlist.py $^ -o $@ --field title
-data/${DS}/venue/%.csv: data/$(DS)/item/%.csv
-	mkdir -p $(dir $@)
-	./wordlist.py $^ -o $@ --field venue
 
 features/$(DS)/shortpath/%.h5: data/$(DS)/author/%.csv
 	mkdir -p $(dir $@)
@@ -120,7 +130,7 @@ features/$(DS)/shortpath/%.h5: data/$(DS)/author/%.csv
 #	mkdir -p $(dir $@)
 #	./c_org.py $< -o $@ --field authorFN
 
-features/$(DS)/c_org/%.h5: data/$(DS)/author/%.csv
+features/$(DS)/c_org/%.h5: data/$(DS)/org/%.csv
 	mkdir -p $(dir $@)
 	./c_org.py $^ -o $@
 
