@@ -164,6 +164,8 @@ features/$(DS)/label/%.h5: data/$(DS)/item/%.csv
 
 result/validate_val/kruskal/%.json: output/validate_val/%.h5 features/validate/id_pairs/%.h5
 	./MT_Kruskal.R $< -o $@ --id $(word 2,$^)
+result/validate_val/likelihood/%.json: output/validate_val/%.h5 features/validate/id_pairs/%.h5 result/validate_val/kruskal/%.json
+	./likelihood.R $< -o $@ --id $(word 2,$^) --kruskal $(word 3,$^)
 
 define merge-tpl
 features/$(DS)/$(1).h5: $$($(DS)_names:%=features/$(DS)/$(1)/%.h5)
