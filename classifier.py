@@ -12,7 +12,6 @@ from collections import OrderedDict
 from sklearn.ensemble import RandomForestClassifier
 from xgboost import XGBClassifier
 from sklearn.externals import joblib
-from sklearn.metrics import f1_score
 
 
 def parse_args():
@@ -28,6 +27,10 @@ def parse_args():
                         help='#samples used in train and val, -1 for all')
     parser.add_argument('--train_split', type=str, default='validate',
                         help='train on split: train, validate')
+    parser.add_argument('--tune_hyper', action='store_true',
+                        help='tune hyper-parameters')
+    parser.add_argument('--tune_split', type=str, default='validate',
+                        help='tune on split: train, validate')
     parser.add_argument('--eval', action='store_true',
                         help='eval models')
     parser.add_argument('--eval_split', type=str, default='validate_val',
@@ -42,10 +45,68 @@ def parse_args():
     #                     help='remove samples with missing data in train')
     # parser.add_argument('--name_split_file', type=str, default='data/split_1fold.json',
     #                     help='file that contains train and val splits of names')
-    parser.add_argument('--name_split_train_ratio', type=float, default=0.8,
+    parser.add_argument('--train_ratio', type=float, default=0.8,
                         help='ratio of train names to all names')
+    parser.add_argument('--random_state', type=int, default=2018,
+                        help='random state for XGB and sklearn')
     args = parser.parse_args()
     return args
+
+
+def tune_hyper(args):
+    # Define parameters
+    tune_params = {'n_estimators': [50, 100, 150]}
+    fixed_params = {'learning_rate': 0.1,
+                    'scale_pos_weight': 1,
+                    'random_state': args.random_state,
+                    'n_jobs': 4}
+
+    # Load data
+    data, label = loaders(args, args.tune_split)
+    data_train, label_train, data_val, label_val = data['train'], label['train'], data['val'], label['val']
+
+    # Define CV split
+    # from sklearn.model_selection import StratifiedShuffleSplit
+    # sss = StratifiedShuffleSplit(n_splits=5, train_size=args.train_ratio, 
+    #                              random_state=args.random_state)
+    # from sklearn.model_selection import ShuffleSplit
+    # sss = ShuffleSplit(n_splits=5, train_size=args.train_ratio, 
+    #                              random_state=args.random_state)
+    from sklearn.model_selection import KFold
+    sss = KFold(n_splits=5, shuffle=True, random_state=args.random_state)
+
+    # Conduct CV
+    from sklearn.model_selection import GridSearchCV
+    from sklearn.metrics import make_scorer, classification_report
+    clf = GridSearchCV(XGBClassifier(**fixed_params),
+                       param_grid=tune_params, 
+                       scoring=make_scorer(f1_score),
+                       n_jobs=1, refit=True,
+                       cv=sss, verbose=1, pre_dispatch='n_jobs')
+    clf.fit(data_train, label_train)
+
+    # Print result
+    print("Grid scores on development set:")
+    print('')
+    means = clf.cv_results_['mean_test_score']
+    stds = clf.cv_results_['std_test_score']
+    for mean, std, params in zip(means, stds, clf.cv_results_['params']):
+        print("%0.3f (+/-%0.03f) for %r"
+              % (mean, std * 2, params))
+    print('')
+    print("Best parameters set found on development set:")
+    print(clf.best_params_)
+    print('')
+    pred_val = clf.predict(data_val)
+    print('F1 score: %.6f' % f1_score(label_val, pred_val))
+
+    # Path to save models
+    if not osp.exists('models'):
+        os.makedirs('models')
+    # Save model
+    model_filename = 'models/XGB_tune.model'
+    joblib.dump(clf.best_estimator_, model_filename)
+    print('Best model saved to ' + model_filename)
 
 
 def f1_score(gt, pred):
@@ -128,7 +189,7 @@ def loaders(args, split):
             name_split = json.load(open(name_split_file))
             names_train, names_val = name_split['train'], name_split['val']
         else:
-            nb_names_train = int(np.ceil(len(names_all) * args.name_split_train_ratio))
+            nb_names_train = int(np.ceil(len(names_all) * args.train_ratio))
             names_train, names_val = names_all[:nb_names_train], names_all[nb_names_train:]
             name_split = {'train':names_train, 'val':names_val}
             with open(name_split_file, 'w') as f:
@@ -205,7 +266,12 @@ def train(args):
         if model_id == 'RandomForest':
             models['RandomForest'] = RandomForestClassifier(class_weight='balanced')
         elif model_id == 'XGB':
-            models['XGB'] = XGBClassifier(scale_pos_weight=1)
+            fixed_params = {'learning_rate': 0.1,
+                            'scale_pos_weight': 1,
+                            'random_state': args.random_state,
+                            'n_jobs': 4}
+            models['XGB'] = XGBClassifier(**fixed_params)
+            # models['XGB'] = XGBClassifier(scale_pos_weight=1)
         else:
             raise ValueError('model %s not implemented' % model_id)
     # Path to save models
@@ -318,6 +384,9 @@ if __name__ == '__main__':
     if args.retrain:
         print('Train on ' + args.train_split + ' split')
         train(args)
+    elif args.tune_hyper:
+        print('Tune hyper-parameters on ' + args.tune_split + ' split')
+        tune_hyper(args)
     elif args.eval:
         assert retrain_flag == False, 'Not all models are trained'
         print('Eval on ' + args.eval_split + ' split')

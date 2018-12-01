@@ -1,5 +1,3 @@
-#coauthor glue 
-
 #!/usr/bin/env Rscript
 require(argparse)
 psr <- ArgumentParser(description="coauthor glue baseline")
@@ -11,16 +9,15 @@ args <- psr$parse_args()
 
 library(igraph)
 library(dplyr)
-library(rjson)
+library(jsonlite)
 library(stringr)
 require(plyr)
 library(rhdf5)
 library(tidyr)
 
-author<-read.csv('long_wang.csv') %>% select(-X)
+author<-read.csv(args$ipt) %>% select(-X)
 names(author) <- c('name','org','id','seq')
-fname <- str_replace_all(pv[i],pattern='.csv',replacement = '')
-
+fname <- str_replace_all(basename(args$ipt),pattern='.csv',replacement = '')
 auname <- author %>% group_by(name) %>% dplyr::summarise(count = n()) %>% arrange(desc(count))
 auname <- auname$name[1]
 
@@ -71,7 +68,6 @@ dist <- distances(net)
 
 # 变形成为similarity 
 
-
 dist_final <- data.frame(dist)
 dist_final <- dist_final[rownames(dist_final)%in% node_au,]
 dist_final$node1 <- rownames(dist_final)
@@ -80,12 +76,4 @@ dist_final <- dist_final %>% gather(node2, value, -node1) %>% mutate(node2 = str
         filter(node2 %in% node_au) %>% filter(node1 < node2)
 
 # 输出数据
-write_json(dist_final,path = paste0(args$opt,'/result/',fname,'.json'))
-
-
-
-
-
-
-
-
+write_json(dist_final,path = args$opt)

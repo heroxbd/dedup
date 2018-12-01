@@ -1,5 +1,5 @@
 SHELL:=/bin/bash
-DS:=train
+DS:=validate
 
 DSP:=train validate0 test
 DSA:=train validate validate0 test
@@ -122,33 +122,33 @@ data/uni_glue_${DS}.json: $($(DS)_names:%=data/$(DS)/uniglue/%.csv)
 data/coauthor_glue_${DS}.json: $($(DS)_names:%=data/$(DS)/coauthor/%.csv)
 	./org_bag.py $^ -o $@ --field uniglue
 
-features/$(DS)/shortpath/%.h5: data/$(DS)/author/%.csv
+features/$(DS)/shortpath/%.json: data/$(DS)/author/%.csv
 	mkdir -p $(dir $@)
-	python ./shortpath_feature.py $< -o $@
+	./short_path.R $< -o $@
 
 #features/$(DS)/c_authorFN/%.h5: data/$(DS)/author/%.csv
 #	mkdir -p $(dir $@)
 #	./c_org.py $< -o $@ --field authorFN
 
-features/$(DS)/c_org/%.h5: data/$(DS)/org/%.csv
+features/$(DS)/c_org/%.h5: data/$(DS)/org/%.csv data/org_idf.csv
 	mkdir -p $(dir $@)
-	./c_org.py $^ -o $@
+	./c_org.py $< -o $@ --field org --idf $(word 2,$^)
 
-features/$(DS)/c_title/%.h5: data/$(DS)/title/%.csv
+features/$(DS)/c_title/%.h5: data/$(DS)/title/%.csv data/title_idf.csv
 	mkdir -p $(dir $@)
-	./c_org.py $^ -o $@ --field title
+	./c_org.py $< -o $@ --field title --idf $(word 2,$^)
 
-features/$(DS)/c_venue/%.h5: data/$(DS)/venue/%.csv
+features/$(DS)/c_venue/%.h5: data/$(DS)/venue/%.csv data/venue_idf.csv
 	mkdir -p $(dir $@)
-	./c_org.py $^ -o $@ --field venue
+	./c_org.py $< -o $@ --field venue --idf $(word 2,$^)
+
+features/$(DS)/c_keywords/%.h5: data/$(DS)/keywords/%.csv data/keywords_idf.csv
+	mkdir -p $(dir $@)
+	./c_org.py $< -o $@ --field keywords --idf $(word 2,$^)
 
 features/$(DS)/diff_year/%.h5: data/$(DS)/item/%.csv
 	mkdir -p $(dir $@)
 	./diff_year.py $^ -o $@ --field year
-
-features/$(DS)/c_keywords/%.h5: data/$(DS)/keywords/%.csv
-	mkdir -p $(dir $@)
-	./c_org.py $^ -o $@ --field keywords
 
 features/$(DS)/id_pairs/%.h5: data/$(DS)/keywords/%.csv
 	mkdir -p $(dir $@)
@@ -163,9 +163,19 @@ features/$(DS)/label/%.h5: data/$(DS)/item/%.csv
 	./label.py $^ -o $@ --ref data/assignment_$(DS).json
 
 result/validate_val/kruskal/%.json: output/validate_val/%.h5 features/validate/id_pairs/%.h5
+	mkdir -p $(dir $@)
 	./MT_Kruskal.R $< -o $@ --id $(word 2,$^)
-result/validate_val/likelihood/%.json: output/validate_val/%.h5 features/validate/id_pairs/%.h5 result/validate_val/kruskal/%.json
-	./likelihood.R $< -o $@ --id $(word 2,$^) --kruskal $(word 3,$^)
+
+result/validate_val/likelihood/%.json: output/validate_val/%.h5 result/validate_val/kruskal/%.json
+	mkdir -p $(dir $@)
+	./likelihood.R $< -o $@ --id features/validate/id_pairs/$*.h5 --kruskal $(word 2,$^)
+
+data/pubs_validate.json: data/pubs_validate0.json data/assignment_validate.json
+	./lfilter.py
+
+validate_val_names:=$(shell jq -r '.val[]' < data/validate/split_1fold.json)
+result/validate_val.json: $(validate_val_names:%=result/validate_val/likelihood/%.json)
+	./merge_final_assignment.R $^ -o $@
 
 define merge-tpl
 features/$(DS)/$(1).h5: $$($(DS)_names:%=features/$(DS)/$(1)/%.h5)

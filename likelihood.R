@@ -26,7 +26,6 @@ result_list <- read_json(args$kruskal)
 
 likelihood_df <- as.data.frame(1:length(result_list))
 names(likelihood_df) <- 'step'
-likelihood_df$ll_hood <- 0
 
 likelihood <- function(i){
     similarity$edge <- 0
@@ -53,22 +52,22 @@ likelihood <- function(i){
 
 # 此处需要优化成parallel 
 
-vapply(1:length(result_list), likelihood)
+likelihood_df$ll_hood <- laply(1:length(result_list), likelihood)
 
-for(k in 1:length(result_list)){
-    likelihood_df$ll_hood[k] <- likelihood(k)
-    cat(k,'\n')
-}
 #8:50开始
-plot(likelihood_df$ll_hood, likelihood_df$step)
+pdf(sub('.json', '.pdf', args$opt))
+plot(likelihood_df$ll_hood, type="l", xlab="step", ylab="loglik", 
+     main=sprintf("%s: %s steps", basename(args$opt), length(result_list)))
+dev.off()
+
 likelihood_df <- likelihood_df %>% arrange(desc(ll_hood)) 
 opt <- likelihood_df$step[1]
-node <- result_list[[opt]]$node
-group <- result_list[[opt]]$group
-result <- data.frame(cbind(node,group),stringsAsFactors = F)
+node <- unlist((result_list[[opt]]))[seq(1,length(unlist((result_list[[opt]])))-1,2)]
+group <- unlist((result_list[[opt]]))[seq(2,length(unlist((result_list[[opt]]))),2)]
+result <- data.frame(node,group)
 final_result <- list()
 
-for(l in 1: length(unique(result$group))){
+for(l in 1:length(unique(result$group))){
         final_result[[l]] <- result$node[result$group==unique(result$group)[l]]
 }
 max <- length(unlist(final_result))
