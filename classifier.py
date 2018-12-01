@@ -2,7 +2,9 @@
 import os
 import os.path as osp
 import numpy as np
+import pandas as pd
 import h5py
+import random
 import argparse
 import json
 import time
@@ -62,18 +64,18 @@ def tune_hyper(args):
                     'n_jobs': 4}
 
     # Load data
-    data, label = loaders(args, args.tune_split)
+    data, label, _ = loaders(args, args.tune_split)
     data_train, label_train, data_val, label_val = data['train'], label['train'], data['val'], label['val']
 
     # Define CV split
-    # from sklearn.model_selection import StratifiedShuffleSplit
-    # sss = StratifiedShuffleSplit(n_splits=5, train_size=args.train_ratio, 
-    #                              random_state=args.random_state)
+    from sklearn.model_selection import StratifiedShuffleSplit
+    sss = StratifiedShuffleSplit(n_splits=5, train_size=args.train_ratio,
+                                 random_state=args.random_state)
     # from sklearn.model_selection import ShuffleSplit
     # sss = ShuffleSplit(n_splits=5, train_size=args.train_ratio, 
     #                              random_state=args.random_state)
-    from sklearn.model_selection import KFold
-    sss = KFold(n_splits=5, shuffle=True, random_state=args.random_state)
+    # from sklearn.model_selection import KFold
+    # sss = KFold(n_splits=5, shuffle=True, random_state=args.random_state)
 
     # Conduct CV
     from sklearn.model_selection import GridSearchCV
@@ -147,6 +149,7 @@ def loaders(args, split):
         feat_file_list = ['features/' + load_split + '/' + f + '.h5' for f in args.feature_ids]
     print('Using features: ' + ' '.join(args.feature_ids))
     data = []
+    feat_names = []
     sep_data = None
     for feat_id, feat_file in zip(args.feature_ids, feat_file_list):
         print('Loading features ' + feat_id)
@@ -155,6 +158,7 @@ def loaders(args, split):
             feat = f[feat_id][:]
             # if features are saved as numpy structure
             for field in feat.dtype.names:
+                feat_names.append(field)
                 feat_field = feat[field]
                 # for concatenate, add axis 1
                 if len(feat_field.shape) == 1:
@@ -189,11 +193,18 @@ def loaders(args, split):
             name_split = json.load(open(name_split_file))
             names_train, names_val = name_split['train'], name_split['val']
         else:
-            nb_names_train = int(np.ceil(len(names_all) * args.train_ratio))
-            names_train, names_val = names_all[:nb_names_train], names_all[nb_names_train:]
-            name_split = {'train':names_train, 'val':names_val}
-            with open(name_split_file, 'w') as f:
-                json.dump(name_split, f)
+            raise AssertionError('run python sample_seed.py first!')
+            # if load_split == 'validate':
+            #     assert len(names_all) == 49, 'validate names not equal to 49!'
+            # random.seed(274)
+            # nb_val = int(np.floor(len(names_all) * (1 - args.train_ratio)))
+            # val_index = random.sample(range(len(names_all)), nb_val)
+            # train_index = np.setdiff1d(range(len(names_all)), val_index)
+            # names_train = [names_all[i] for i in train_index]
+            # names_val = [names_all[i] for i in val_index]
+            # name_split = {'train':names_train, 'val':names_val}
+            # with open(name_split_file, 'w') as f:
+            #     json.dump(name_split, f)
 
         # Split data into train and val
         index_train = [np.arange(ind['start'], ind['end']) for ind in index if ind['name'] in names_train]
@@ -201,15 +212,6 @@ def loaders(args, split):
         index_val = [np.arange(ind['start'], ind['end']) for ind in index if ind['name'] in names_val]
         index_val = np.concatenate(index_val)
         print('Loaded #train: %d, #val: %d' % (len(index_train), len(index_val)))
-
-        # Leave out samples with missing data
-        # if args.remove_missing:
-        #     print('Removing samples with missing data')
-        #     with h5py.File('features/train/valid_index.h5', 'r') as f:
-        #         valid_index = f['valid_index'][:].astype(np.bool)
-        #     index_train = index_train[valid_index[index_train]]
-        #     index_val = index_val[valid_index[index_val]]
-        #     print('After removing missing data, #train: %d, #val: %d' % (len(index_train), len(index_val)))
             
         # Resample step 1: filter out samples that are all zeros
         # if (not args.eval) and (not args.predict):
@@ -244,10 +246,10 @@ def loaders(args, split):
             names = names_val
         else:
             sep = sep_data
-            names = sorted(json.load(open('data/assignment_' + load_split + '.json')).keys())
+            names = sorted(json.load(open('data/pubs_' + load_split + '.json')).keys())
         return data, sep, names
     else:
-        return data, label
+        return data, label, feat_names
 
 
 def train(args):
@@ -257,7 +259,7 @@ def train(args):
     ensemble several random forests
     '''
     # Load data
-    data, label = loaders(args, args.train_split)
+    data, label, feat_names = loaders(args, args.train_split)
     data_train, label_train, data_val, label_val = data['train'], label['train'], data['val'], label['val']
 
     # Initialize classifier
@@ -300,6 +302,9 @@ def train(args):
         # save model
         joblib.dump(model, model_filename)
         print('Model saved to ' + model_filename)
+        # save feature importance
+        if model_id == 'XGB':
+            pd.Series(data=model.feature_importances_, index=feat_names).to_csv('models/XGB_feat_importance.csv')
 
     # Ensemble
     if len(args.model_ids) < 2:
@@ -315,7 +320,7 @@ def train(args):
 def evaluate(args):
     # Load data
     args.nb_samples = -1 # no resampling in evaluation
-    data, label = loaders(args, args.eval_split)
+    data, label, _ = loaders(args, args.eval_split)
     data, label = data['val'], label['val']
     # data, label = data['train'], label['train']
 

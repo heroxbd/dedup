@@ -1,10 +1,13 @@
 #!/usr/bin/env python
 import glob
+import os
+import h5py
+import json
 import random
 import numpy as np
 
 # Calculate lens and labels
-labels = glob.glob('features/validate/label/*.h5')
+labels = sorted(glob.glob('features/validate/label/*.h5'))
 names = [os.path.split(l)[1][:-3] for l in labels]
 nb_names = len(names)
 nb_val = int(np.floor(nb_names * 0.2))
@@ -38,5 +41,13 @@ val_index = random.sample(range(nb_names), nb_val)
 train_index = np.setdiff1d(range(nb_names), val_index)
 d1 = float(nb_pos[train_index].sum()) / nb_labels[train_index].sum()
 d2 = float(nb_pos[val_index].sum()) / nb_labels[val_index].sum()
-print('train pos rate: %d' % d1)
-print('val pos rate: %d' % d2)
+print('train pos rate: %.4f' % d1)
+print('val pos rate: %.4f' % d2)
+
+# Save names
+name_split_file = 'data/validate/split_1fold.json'
+names_splitted = {'train':[names[i] for i in train_index],
+                  'val':[names[i] for i in val_index]}
+with open(name_split_file, 'w') as f:
+    json.dump(names_splitted, f)
+print('result saved to ' + name_split_file)
