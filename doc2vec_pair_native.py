@@ -99,8 +99,6 @@ for (al, bl) in it.combinations(au.groupby('id')['id'],2):
     else:
         idx_a = id_list_author.index(tag_a)
     idx_b = id_list_author.index(tag_b)    
-    #idx_a = id_list.index(tag_a)
-    #idx_b = id_list.index(tag_b)
     docvec_a = model.docvecs[tag_a]
     docvec_b = model.docvecs[tag_b]
     norm_a = np.linalg.norm(docvec_a)
@@ -109,12 +107,7 @@ for (al, bl) in it.combinations(au.groupby('id')['id'],2):
     angle = np.arccos( max( min( np.dot(docvec_a,docvec_b)/(norm_a*norm_b), 1), -1) )
     text_length_multiply = len(corpus_author[idx_a])*len(corpus_author[idx_b])
     
-    #if len(corpus_author[idx_a])>10 and len(corpus_author[idx_b])>10:
-    #    valid = 1
-    #else:
-    #    valid = 0
-    
-    dl.append( [distance, angle, np.sqrt(text_length_multiply)] )
+    dl.append( (distance, angle, np.sqrt(text_length_multiply)) )
     
     count = count + 1;
     if count/total_num > progress:
@@ -124,8 +117,8 @@ for (al, bl) in it.combinations(au.groupby('id')['id'],2):
 print(len(dl))
 
 dsn = args.opt.split('/')[-2] # doc2vec_singlet_native
-x = np.array(dl, dtype=[('{}_distance'.format(dsn), 'f4'), 
-                        ('{}_angle'.format(dsn), 'f4'), 
+x = np.array(dl, dtype=[('{}_distance'.format(dsn), 'f4'),
+                        ('{}_angle'.format(dsn), 'f4'),
                         ('{}_length'.format(dsn), 'f4')])
 
 with h5py.File(output_file_path, 'w') as opt:
