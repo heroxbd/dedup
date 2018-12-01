@@ -122,9 +122,9 @@ data/uni_glue_${DS}.json: $($(DS)_names:%=data/$(DS)/uniglue/%.csv)
 data/coauthor_glue_${DS}.json: $($(DS)_names:%=data/$(DS)/coauthor/%.csv)
 	./org_bag.py $^ -o $@ --field uniglue
 
-features/$(DS)/shortpath/%.h5: data/$(DS)/author/%.csv
+features/$(DS)/shortpath/%.json: data/$(DS)/author/%.csv
 	mkdir -p $(dir $@)
-	python ./shortpath_feature.py $< -o $@
+	./short_path.R $< -o $@
 
 #features/$(DS)/c_authorFN/%.h5: data/$(DS)/author/%.csv
 #	mkdir -p $(dir $@)
