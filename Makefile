@@ -163,9 +163,13 @@ features/$(DS)/label/%.h5: data/$(DS)/item/%.csv
 	./label.py $^ -o $@ --ref data/assignment_$(DS).json
 
 result/validate_val/kruskal/%.json: output/validate_val/%.h5 features/validate/id_pairs/%.h5
+	mkdir -p $(dir $@)
 	./MT_Kruskal.R $< -o $@ --id $(word 2,$^)
-result/validate_val/likelihood/%.json: output/validate_val/%.h5 features/validate/id_pairs/%.h5 result/validate_val/kruskal/%.json
-	./likelihood.R $< -o $@ --id $(word 2,$^) --kruskal $(word 3,$^)
+
+result/validate_val/likelihood/%.json: output/validate_val/%.h5 result/validate_val/kruskal/%.json
+	mkdir -p $(dir $@)
+	./likelihood.R $< -o $@ --id features/validate/id_pairs/$*.h5 --kruskal $(word 2,$^)
+result/validate_val.json: 
 
 define merge-tpl
 features/$(DS)/$(1).h5: $$($(DS)_names:%=features/$(DS)/$(1)/%.h5)
