@@ -17,24 +17,24 @@ dv <- read.csv(args$ipt, row.names=1)
 if (args$field == 'item') {
     dv <- dv %>% mutate(venue = str_replace_all(venue,pattern = "[0-9]{4}|'|[0-9]+th|[0-9]+nd|[0-9]+st|[0-9]+rd|\\.",
                                              replacement = ''),
-                     venue = str_replace_all(venue,pattern = ",|/|'|-|:|\\(|\\)",replacement = ' '),
+                     venue = str_replace_all(venue,pattern = ",|/|'|\"|-|:|\\(|\\)",replacement = ' '),
                      venue = str_replace_all(venue,pattern = "[:blank:]{2,}",replacement = ' '),
                      venue = str_replace_all(venue,pattern = "^[:blank:]+",replacement = ''),
                      title = str_replace_all(title,pattern = "[0-9]{4}|'|[0-9]+th|[0-9]+nd|[0-9]+st|[0-9]+rd|\\.",
                                              replacement = ''),
-                     title = str_replace_all(title,pattern = ",|/|'|-|:|\\(|\\)",replacement = ' '),
+                     title = str_replace_all(title,pattern = ",|/|'|\"|-|:|\\(|\\)",replacement = ' '),
                      title = str_replace_all(title,pattern = "[:blank:]{2,}",replacement = ' '),
                      title = str_replace_all(title,pattern = "^[:blank:]+",replacement = ''))
 } else if (args$field == "author") {
     dv <- dv %>% mutate(name = str_replace_all(name,pattern = "[0-9]{4}|'|[0-9]+th|[0-9]+nd|[0-9]+st|[0-9]+rd|\\.",
                                                     replacement = ''),
-                             name = str_replace_all(name,pattern = ",|/|'|-|:|\\(|\\)",replacement = ' '),
+                             name = str_replace_all(name,pattern = ",|/|'|\"|-|:|\\(|\\)",replacement = ' '),
                              name = str_replace_all(name,pattern = "[:blank:]{2,}",replacement = ' '),
                              name = str_replace_all(name,pattern = "^[:blank:]+",replacement = ''),
                              name = tolower(name),
                              org = str_replace_all(org,pattern = "[0-9]{4}|'|[0-9]+th|[0-9]+nd|[0-9]+st|[0-9]+rd|\\.",
                                                    replacement = ''),
-                             org = str_replace_all(org,pattern = ",|/|'|-|:|\\(|\\)",replacement = ' '),
+                             org = str_replace_all(org,pattern = ",|/|'|\"|-|:|\\(|\\)",replacement = ' '),
                              org = str_replace_all(org,pattern = "[:blank:]{2,}",replacement = ' '),
                              org = str_replace_all(org,pattern = "^[:blank:]+",replacement = ''))
 }
