@@ -1,10 +1,10 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import argparse
-psr = argparse.ArgumentParser("baseline solution")
+psr = argparse.ArgumentParser("Intersection of 2 entities.")
 psr.add_argument('ipt', default='data/c_c_wang.csv', help="input")
 psr.add_argument("-o", dest='opt', help="output")
 psr.add_argument('--field', default='org', help="the field to count common entries in")
-psr.add_argument('--idf', default='data/train/venue_idf.csv', help="idf feature generator")
+psr.add_argument('--idf', default='data/venue_idf.csv', help="idf feature generator")
 args = psr.parse_args()
 
 import pandas as pd, itertools as it, h5py, numpy as np

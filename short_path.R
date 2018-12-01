@@ -1,5 +1,3 @@
-#coauthor glue 
-
 #!/usr/bin/env Rscript
 require(argparse)
 psr <- ArgumentParser(description="coauthor glue baseline")
@@ -69,12 +67,4 @@ dist_final$node1 <- rownames(dist_final)
 dist_final <- dist_final %>% gather(node2, value, -node1) %>% mutate(node2 = str_remove(node2,pattern = 'X')) %>%
         filter(node2 %in% node_au)
 # 输出数据
-write_json(dist_final,path = paste0(args$opt,'/result/',fname,'.json'))
-
-
-
-
-
-
-
-
+write_json(dist_final,path = args$opt)
