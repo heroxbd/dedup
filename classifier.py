@@ -115,8 +115,9 @@ def loaders(args, split):
         assert data.shape[0] == label.shape[0], 'lengths of feature and label not equal'
         assert np.all(sep == sep_data), 'sep of label not the same with sep of features'
         sep = np.concatenate([[0], sep])
-        names_all = json.load(open('data/assignment_' + load_split + '.json'))
-        names_all = sorted(names_all.keys())
+        with open(load_split + '_names.mk', 'r') as f:
+            names_all = f.readlines()[0].strip().split('=')[1].split()
+        names_all = sorted(names_all)
         index = []
         for i, name in enumerate(names_all):
             index.append({'name':name, 'start':sep[i], 'end':sep[i+1]})
@@ -296,7 +297,7 @@ def predict(args):
         else:
             raise ValueError('ensemble strategy %s not implemented' % args.ensemble)
     else:
-        preds = preds[0]
+        preds = preds[0].ravel()
     print('%.2fs have passed' % (time.time() - time_start))
     
     # Path to save result

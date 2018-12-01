@@ -8,6 +8,7 @@ import json
 import time
 import glob
 from collections import OrderedDict
+from scipy.stats import pearsonr
 
 parser = argparse.ArgumentParser(description='check features')
 
@@ -26,7 +27,7 @@ feature_ids = [os.path.split(f)[1][:-3] for f in feat_file_list]
 
 # Load label
 with h5py.File('features/' + args.split + '/label.h5', 'r') as f:
-    label = f['label'][:]
+    label = f['label'][:].astype(np.int)
     print('label shape:')
     print(label.shape)
 
@@ -39,8 +40,5 @@ for feat_id, feat_file in zip(feature_ids, feat_file_list):
         for field in feat.dtype.names:
             print('field: ' + field)
             feat_field = feat[field].ravel()
-            if np.all(label == feat_field):
-                print('same with label!!!!!!')
-            else:
-                print('nothing, relax')
+            print('pearson corelation: %.6f' % pearsonr(label, feat_field)[0])
 
