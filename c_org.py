@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 import argparse
 psr = argparse.ArgumentParser("baseline solution")
-psr.add_argument("-i", default='D:/jike paradis/data/c_c_wang.csv', dest='ipt', help="input")
+psr.add_argument('ipt', default='data/c_c_wang.csv', help="input")
 psr.add_argument("-o", dest='opt', help="output")
-psr.add_argument('--field', default='venue', help="the field to count common entries in")
+psr.add_argument('--field', default='org', help="the field to count common entries in")
 psr.add_argument('--idf', default='data/train/venue_idf.csv', help="idf feature generator")
 args = psr.parse_args()
 

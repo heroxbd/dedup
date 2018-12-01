@@ -55,23 +55,29 @@ def parse_args():
 
 def tune_hyper(args):
     # Define parameters
-    params = {'learning_rate': [0.1],
-              'n_estimators': [50, 100, 150]}
+    tune_params = {'n_estimators': [120, 150, 180]}
+    fixed_params = {'learning_rate': 0.1,
+                    'scale_pos_weight': 1,
+                    'random_state': args.random_state,
+                    'n_jobs': 4}
 
     # Load data
     data, label = loaders(args, args.tune_split)
     data_train, label_train, data_val, label_val = data['train'], label['train'], data['val'], label['val']
 
     # Define CV split
-    from sklearn.model_selection import StratifiedShuffleSplit
-    sss = StratifiedShuffleSplit(n_splits=5, train_size=args.train_ratio, 
+    # from sklearn.model_selection import StratifiedShuffleSplit
+    # sss = StratifiedShuffleSplit(n_splits=5, train_size=args.train_ratio, 
+    #                              random_state=args.random_state)
+    from sklearn.model_selection import ShuffleSplit
+    sss = ShuffleSplit(n_splits=5, train_size=args.train_ratio, 
                                  random_state=args.random_state)
 
     # Conduct CV
     from sklearn.model_selection import GridSearchCV
     from sklearn.metrics import make_scorer, classification_report
-    clf = GridSearchCV(XGBClassifier(scale_pos_weight=1, random_state=args.random_state, n_jobs=4),
-                       param_grid=params, 
+    clf = GridSearchCV(XGBClassifier(**fixed_params),
+                       param_grid=tune_params, 
                        scoring=make_scorer(f1_score),
                        n_jobs=1, refit=True,
                        cv=sss, verbose=1, pre_dispatch='n_jobs')
@@ -87,8 +93,8 @@ def tune_hyper(args):
               % (mean, std * 2, params))
     print('')
     print("Best parameters set found on development set:")
-    print('')
     print(clf.best_params_)
+    print('')
     pred_val = clf.predict(data_val)
     print('F1 score: %.6f' % f1_score(label_val, pred_val))
 
