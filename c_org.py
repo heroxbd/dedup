@@ -13,6 +13,7 @@ import pandas as pd, itertools as it, h5py, numpy as np
 from collections import Counter
 au = pd.read_csv(args.ipt)
 IDFinput = pd.read_csv(args.idf, index_col = 0)
+zd = IDFinput.to_dict()["IDF"]
 
 def f(al,bl):
     commondict = Counter(al[1]) & Counter(bl[1])
@@ -22,7 +23,7 @@ def f(al,bl):
     if commondict == Counter():
         IDF = 0
     else:
-        lu = np.array([IDFinput.loc[k][0] for k in commondict.keys()])
+        lu = np.array([zd[k] for k in commondict.keys()])
         IDF = sum(np.log(lu*(np.array(list(commondict.values()))) + 1))
     return overlap, sumlength, IDF, TF
 
