@@ -133,18 +133,30 @@ features/$(DS)/shortpath/%.json: data/$(DS)/author/%.csv
 features/$(DS)/c_org/%.h5: data/$(DS)/org/%.csv data/org_idf.csv
 	mkdir -p $(dir $@)
 	./c_org.py $< -o $@ --field org --idf $(word 2,$^)
+features/$(DS)/sp_org/%.h5: features/$(DS)/c_org/%.h5 features/$(DS)/id_pairs/%.h5
+	mkdir -p $(dir $@)
+	./shortpath.py -i $< -o $@ --field org_logTFIDF -p $(word 2,$^)
 
 features/$(DS)/c_title/%.h5: data/$(DS)/title/%.csv data/title_idf.csv
 	mkdir -p $(dir $@)
 	./c_org.py $< -o $@ --field title --idf $(word 2,$^)
+features/$(DS)/sp_title/%.h5: features/$(DS)/c_title/%.h5 features/$(DS)/id_pairs/%.h5
+	mkdir -p $(dir $@)
+	./shortpath.py -i $< -o $@ --field title_logTFIDF -p $(word 2,$^)
 
 features/$(DS)/c_venue/%.h5: data/$(DS)/venue/%.csv data/venue_idf.csv
 	mkdir -p $(dir $@)
 	./c_org.py $< -o $@ --field venue --idf $(word 2,$^)
+features/$(DS)/sp_venue/%.h5: features/$(DS)/c_venue/%.h5 features/$(DS)/id_pairs/%.h5
+	mkdir -p $(dir $@)
+	./shortpath.py -i $< -o $@ --field venue_logTFIDF -p $(word 2,$^)
 
 features/$(DS)/c_keywords/%.h5: data/$(DS)/keywords/%.csv data/keywords_idf.csv
 	mkdir -p $(dir $@)
 	./c_org.py $< -o $@ --field keywords --idf $(word 2,$^)
+features/$(DS)/sp_keywords/%.h5: features/$(DS)/c_keywords/%.h5 features/$(DS)/id_pairs/%.h5
+	mkdir -p $(dir $@)
+	./shortpath.py -i $< -o $@ --field keywords_logTFIDF -p $(word 2,$^)
 
 features/$(DS)/diff_year/%.h5: data/$(DS)/item/%.csv
 	mkdir -p $(dir $@)
