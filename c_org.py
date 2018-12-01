@@ -20,10 +20,10 @@ def f(al,bl):
     overlap = sum(commondict.values())
     sumlength = len(al[1]) + len(bl[1])
     if commondict == Counter():
-        IDF = 0
+        IDF = 1
     else:
         IDF = IDFinput.loc[list(commondict.keys())]
-        IDF = sum(IDF['IDF']*np.array(list(commondict.values())))
+        IDF = sum(IDF['IDF']*np.array(list(commondict.values()))) + 1
     return overlap, sumlength, IDF, TF
 
 dl = (f(al,bl)

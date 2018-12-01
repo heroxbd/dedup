@@ -55,7 +55,7 @@ def parse_args():
 
 def tune_hyper(args):
     # Define parameters
-    tune_params = {'n_estimators': [120, 150, 180]}
+    tune_params = {'n_estimators': [50, 100, 150]}
     fixed_params = {'learning_rate': 0.1,
                     'scale_pos_weight': 1,
                     'random_state': args.random_state,
@@ -69,9 +69,11 @@ def tune_hyper(args):
     # from sklearn.model_selection import StratifiedShuffleSplit
     # sss = StratifiedShuffleSplit(n_splits=5, train_size=args.train_ratio, 
     #                              random_state=args.random_state)
-    from sklearn.model_selection import ShuffleSplit
-    sss = ShuffleSplit(n_splits=5, train_size=args.train_ratio, 
-                                 random_state=args.random_state)
+    # from sklearn.model_selection import ShuffleSplit
+    # sss = ShuffleSplit(n_splits=5, train_size=args.train_ratio, 
+    #                              random_state=args.random_state)
+    from sklearn.model_selection import KFold
+    sss = KFold(n_splits=5, shuffle=True, random_state=args.random_state)
 
     # Conduct CV
     from sklearn.model_selection import GridSearchCV
@@ -264,7 +266,12 @@ def train(args):
         if model_id == 'RandomForest':
             models['RandomForest'] = RandomForestClassifier(class_weight='balanced')
         elif model_id == 'XGB':
-            models['XGB'] = XGBClassifier(scale_pos_weight=1)
+            fixed_params = {'learning_rate': 0.1,
+                            'scale_pos_weight': 1,
+                            'random_state': args.random_state,
+                            'n_jobs': 4}
+            models['XGB'] = XGBClassifier(**fixed_params)
+            # models['XGB'] = XGBClassifier(scale_pos_weight=1)
         else:
             raise ValueError('model %s not implemented' % model_id)
     # Path to save models
