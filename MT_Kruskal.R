@@ -164,7 +164,7 @@ result_list <- list()
 
 for(i in 1:dim(result)[1]){
         arcs_result <- arcs_output
-        if(i ==1){
+        if(i==1){
                 result_node <- data.frame(t(result[1,]))
         }else{
                 result_node <- data.frame(result[1:i,])
@@ -183,4 +183,3 @@ for(i in 1:dim(result)[1]){
 }
 
 write_json(result_list, args$opt)
-
