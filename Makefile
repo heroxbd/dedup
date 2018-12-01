@@ -170,6 +170,9 @@ result/validate_val/likelihood/%.json: output/validate_val/%.h5 result/validate_
 	mkdir -p $(dir $@)
 	./likelihood.R $< -o $@ --id features/validate/id_pairs/$*.h5 --kruskal $(word 2,$^)
 
+data/pubs_validate.json: data/pubs_validate0.json data/assignment_validate.json
+	./lfilter.py
+
 validate_val_names:=$(shell jq -r '.val[]' < data/validate/split_1fold.json)
 result/validate_val.json: $(validate_val_names:%=result/validate_val/likelihood/%.json)
 	./merge_final_assignment.R $^ -o $@
