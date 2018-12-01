@@ -122,9 +122,9 @@ data/uni_glue_${DS}.json: $($(DS)_names:%=data/$(DS)/uniglue/%.csv)
 data/coauthor_glue_${DS}.json: $($(DS)_names:%=data/$(DS)/coauthor/%.csv)
 	./org_bag.py $^ -o $@ --field uniglue
 
-features/$(DS)/shortpath/%.json: data/$(DS)/author/%.csv
+features/$(DS)/shortpath/%.h5: data/$(DS)/author/%.csv features/$(DS)/id_pairs/%.h5
 	mkdir -p $(dir $@)
-	./short_path.R $< -o $@
+	./short_path.R $< -o $@ --id $(word 2,$^) > $@.log
 
 #features/$(DS)/c_authorFN/%.h5: data/$(DS)/author/%.csv
 #	mkdir -p $(dir $@)
@@ -196,7 +196,7 @@ endef
 
 paired_features:=c_keywords c_org shortpath diff_year id_pairs valid_index c_title
 paired_features+=c_venue doc2vec_singlet_native doc2vec_doublet_native label
-paired_features+=doc2vec_triplet_native
+paired_features+=doc2vec_triplet_native sp_org sp_title sp_venue sp_keywords
 
 $(foreach k,$(paired_features),$(eval $(call merge-tpl,$(k))))
 

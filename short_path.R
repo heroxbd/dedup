@@ -3,9 +3,8 @@ require(argparse)
 psr <- ArgumentParser(description="coauthor glue baseline")
 psr$add_argument("ipt", help="input", nargs="+")
 psr$add_argument("-o", dest="opt", help="output")
-
+psr$add_argument("--id", help="id pairs order input")
 args <- psr$parse_args()
-
 
 library(igraph)
 library(dplyr)
@@ -21,6 +20,7 @@ fname <- str_replace_all(basename(args$ipt),pattern='.csv',replacement = '')
 auname <- author %>% group_by(name) %>% dplyr::summarise(count = n()) %>% arrange(desc(count))
 auname <- auname$name[1]
 
+idp <- h5read(args$id, "id_pairs")
 
 # 将所有的article形成一个矩阵
 node_au <- as.character(unique(author$id))
@@ -73,7 +73,17 @@ dist_final <- dist_final[rownames(dist_final)%in% node_au,]
 dist_final$node1 <- rownames(dist_final)
 
 dist_final <- dist_final %>% gather(node2, value, -node1) %>% mutate(node2 = str_remove(node2,pattern = 'X')) %>%
-        filter(node2 %in% node_au) %>% filter(node1 < node2)
+    filter(node2 %in% node_au) %>% filter(node1 < node2)
+
+names(dist_final) <- c('id1', 'id2', 'dist')
+rst <- merge(idp, dist_final)
+rst$coau_dist <- 2/rst$dist
+rst$coau_dummy <- as.numeric(rst$coau_dist==1)
+rst$dist <- NULL
+rst$id1 <- NULL
+rst$id2 <- NULL
 
 # 输出数据
-write_json(dist_final,path = args$opt)
+file.remove(args$opt)
+h5createFile(args$opt)
+h5write(rst, file=args$opt, "shortpath")
