@@ -1,3 +1,5 @@
+#!/usr/bin/env Rscript
+
 #install.packages('optrees')
 #install.packages('jsonlite)
 library(optrees)
@@ -10,6 +12,14 @@ library(jsonlite)
 # source("http://bioconductor.org/biocLite.R")
 # biocLite("rhdf5")
 library(rhdf5)
+
+require(argparse)
+psr <- ArgumentParser(description="from similarity to cluster")
+psr$add_argument("ipt", help="pairwise similarity input")
+psr$add_argument("-o", dest="opt", help="cluster output")
+psr$add_argument("--id", help="id pairs input")
+args <- psr$parse_args()
+
 # path1 <- '/Users/ZLab/Downloads/Amine/predict'
 # path2 <- '/Users/ZLab/Downloads/Amine/idpair'
 # predt_file <- list.files(path1)
@@ -19,15 +29,13 @@ library(rhdf5)
 # make_mt <- function(n){
 # setwd("/Users/ZLab/Documents/Dropbox/test")
         
-similarity <-  h5read(paste0(path1,'/',predt_file[n]),'/prediction')
-id_pairs <- h5read(paste0(path2,'/',pair_file[n]),'id_pairs')
+similarity <-  h5read(args$ipt,'/prediction')
+id_pairs <- h5read(args$id,'id_pairs')
+
 # h5ls('juan_du.h5')
 # h5ls('juan_du_idpair.h5')
 # similarity <- h5read('juan_du.h5','/prediction')
 # id_pairs <- h5read('juan_du_idpair.h5','id_pairs')
-
-# 文件命名没有写
-similarity <- similarity[1,]
 
 disamid <- data.frame()#duplicate 的接口
 arcs_org <- id_pairs
@@ -174,8 +182,5 @@ for(i in 1:dim(result)[1]){
                 #cat(i,'\n')
 }
 
-# 文件命名没有写
-
-write_json(result_list,  paste0(predt_file[n],".json"))
-write_json(result_list,  "result_list.json")
+write_json(result_list, args$opt)
 

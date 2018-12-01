@@ -162,6 +162,9 @@ features/$(DS)/label/%.h5: data/$(DS)/item/%.csv
 	mkdir -p $(dir $@)
 	./label.py $^ -o $@ --ref data/assignment_$(DS).json
 
+result/validate_val/kruskal/%.json: output/validate_val/%.h5 features/validate/id_pairs/%.h5
+	./MT_Kruskal.R $< -o $@ --id $(word 2,$^)
+
 define merge-tpl
 features/$(DS)/$(1).h5: $$($(DS)_names:%=features/$(DS)/$(1)/%.h5)
 	./merge.py $$^ -o $$@ --field $(1)
