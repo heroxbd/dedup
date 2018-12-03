@@ -189,13 +189,21 @@ result/validate_val/kruskal/%.json: output/validate_val/%.h5 features/validate/i
 result/validate_val/likelihood/%.json: output/validate_val/%.h5 result/validate_val/kruskal/%.json
 	mkdir -p $(dir $@)
 	./likelihood.R $< -o $@ --id features/validate/id_pairs/$*.h5 --kruskal $(word 2,$^)
-
-data/pubs_validate.json: data/pubs_validate0.json data/assignment_validate.json
-	./lfilter.py
-
 validate_val_names:=$(shell jq -r '.val[]' < data/validate/split_1fold.json)
 result/validate_val.json: $(validate_val_names:%=result/validate_val/likelihood/%.json)
 	./merge_final_assignment.R $^ -o $@
+
+result/test/kruskal/%.json: output/test/%.h5 features/test/id_pairs/%.h5
+	mkdir -p $(dir $@)
+	./MT_Kruskal.R $< -o $@ --id $(word 2,$^)
+result/test/likelihood/%.json: output/test/%.h5 result/test/kruskal/%.json
+	mkdir -p $(dir $@)
+	./likelihood.R $< -o $@ --id features/test/id_pairs/$*.h5 --kruskal $(word 2,$^)
+result/test.json: $(test_names:%=result/test/likelihood/%.json)
+	./merge_final_assignment.R $^ -o $@
+
+data/pubs_validate.json: data/pubs_validate0.json data/assignment_validate.json
+	./lfilter.py
 
 define merge-tpl
 features/$(DS)/$(1).h5: $$($(DS)_names:%=features/$(DS)/$(1)/%.h5)
