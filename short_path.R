@@ -24,7 +24,8 @@ idp <- h5read(args$id, "id_pairs")
 
 # 将所有的article形成一个矩阵
 node_au <- as.character(unique(author$id))
-node_coau <- unique(author$name)[unique(author$name)!=auname]
+author_1 <- author %>% group_by(name) %>% dplyr::summarise(count = n()) %>% arrange(desc(count)) %>% filter(count>1 & count < 4)
+node_coau <- unique(author_1$name)[unique(author_1$name)!=auname]
 node_all <- c(node_au,node_coau)
 
 adjacency_co <- merge(node_coau,node_coau,ALL=T)
@@ -63,10 +64,12 @@ node <- unique(c(adjacency_1$node1,adjacency_1$node2,node_au))
 # 生成图
 net <- graph_from_data_frame(e, directed=F, vertices=node)
 
-# 计算节点间距离
-dist <- distances(net)
-
 # 变形成为similarity 
+dist_final <- merge(node_au,node_au,all=TRUE) 
+names(dist_final) <- c('node1','node2')
+dist_final  <- dist_final %>% mutate(node1 = as.character(node1), node2 = as.character(node2)) %>% filter(node1 < node2)
+node_0<-as.factor(node)
+dist <- distances(net,v=as.numeric(node_0[node_0%in%dist_final$node1]),to=as.numeric(node_0[node_0%in%dist_final$node2]))
 
 dist_final <- data.frame(dist)
 dist_final <- dist_final[rownames(dist_final)%in% node_au,]
