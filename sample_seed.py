@@ -46,8 +46,8 @@ print('val pos rate: %.4f' % d2)
 
 # Save names
 name_split_file = 'data/validate/split_1fold.json'
-names_splitted = {'train':[names[i] for i in train_index],
-                  'val':[names[i] for i in val_index]}
+names_splitted = {'train':sorted([names[i] for i in train_index]),
+                  'val':sorted([names[i] for i in val_index])}
 with open(name_split_file, 'w') as f:
     json.dump(names_splitted, f)
 print('result saved to ' + name_split_file)

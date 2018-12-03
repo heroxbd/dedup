@@ -8,6 +8,7 @@ import random
 import argparse
 import json
 import time
+import copy
 import glob
 from collections import OrderedDict
 
@@ -27,6 +28,8 @@ def parse_args():
                         help='ensemble strategy')
     parser.add_argument('--nb_samples', type=int, default=-1,
                         help='#samples used in train and val, -1 for all')
+    parser.add_argument('--bootstrap', action='store_true',
+                        help='bootstrap in data preparation')
     parser.add_argument('--train_split', type=str, default='validate',
                         help='train on split: train, validate')
     parser.add_argument('--tune_hyper', action='store_true',
@@ -43,6 +46,8 @@ def parse_args():
                         help='predict on split: train, train_val, validate, validate_val, test')
     parser.add_argument('--retrain', action='store_true',
                         help='retrain all models')
+    parser.add_argument('--model_params', type=str, default=None,
+                        help='model params of XGB')
     # parser.add_argument('--remove_missing', action='store_true',
     #                     help='remove samples with missing data in train')
     # parser.add_argument('--name_split_file', type=str, default='data/split_1fold.json',
@@ -55,9 +60,27 @@ def parse_args():
     return args
 
 
+class BootstrapSplit():
+    def __init__(self, init_split):
+        self.init_split = copy.copy(init_split)
+
+    def get_n_splits(self, X=None, y=None, groups=None):
+        return self.init_split.get_n_splits()
+
+    def split(self, X, y, groups=None):
+        splits = list(self.init_split.split(X, y))
+        for train, test in splits:
+            train_neg = np.where(y[train] == 0)[0]
+            train_pos = np.where(y[train] == 1)[0]
+            train_neg = np.random.choice(train_neg, len(train_pos))
+            train = np.concatenate((train_pos, train_neg))
+            np.random.shuffle(train)
+            yield train, test
+
+
 def tune_hyper(args):
     # Define parameters
-    tune_params = {'n_estimators': [50, 100, 150]}
+    tune_params = {'n_estimators': [50]}
     fixed_params = {'learning_rate': 0.1,
                     'scale_pos_weight': 1,
                     'random_state': args.random_state,
@@ -71,6 +94,8 @@ def tune_hyper(args):
     from sklearn.model_selection import StratifiedShuffleSplit
     sss = StratifiedShuffleSplit(n_splits=5, train_size=args.train_ratio,
                                  random_state=args.random_state)
+    if args.bootstrap:
+        sss = BootstrapSplit(sss)
     # from sklearn.model_selection import ShuffleSplit
     # sss = ShuffleSplit(n_splits=5, train_size=args.train_ratio, 
     #                              random_state=args.random_state)
@@ -83,7 +108,7 @@ def tune_hyper(args):
     clf = GridSearchCV(XGBClassifier(**fixed_params),
                        param_grid=tune_params, 
                        scoring=make_scorer(f1_score),
-                       n_jobs=1, refit=True,
+                       n_jobs=1, refit=False,
                        cv=sss, verbose=1, pre_dispatch='n_jobs')
     clf.fit(data_train, label_train)
 
@@ -99,16 +124,20 @@ def tune_hyper(args):
     print("Best parameters set found on development set:")
     print(clf.best_params_)
     print('')
-    pred_val = clf.predict(data_val)
-    print('F1 score: %.6f' % f1_score(label_val, pred_val))
 
+    fixed_params.update(clf.best_params_)
     # Path to save models
     if not osp.exists('models'):
         os.makedirs('models')
     # Save model
-    model_filename = 'models/XGB_tune.model'
-    joblib.dump(clf.best_estimator_, model_filename)
-    print('Best model saved to ' + model_filename)
+    model_filename = 'models/XGB_tune.param'
+    json.dump(fixed_params, open(model_filename, 'w'))
+    print('Best model params saved to ' + model_filename)
+    args.model_params = model_filename
+    args.nb_samples = 100000
+    args.model_ids = ['XGB']
+    args.retrain = True
+    train(args)
 
 
 def f1_score(gt, pred):
@@ -191,7 +220,7 @@ def loaders(args, split):
         name_split_file = osp.join('data', load_split, 'split_1fold.json')
         if osp.exists(name_split_file):
             name_split = json.load(open(name_split_file))
-            names_train, names_val = name_split['train'], name_split['val']
+            names_train, names_val = sorted(name_split['train']), sorted(name_split['val'])
         else:
             raise AssertionError('run python sample_seed.py first!')
             # if load_split == 'validate':
@@ -240,10 +269,13 @@ def loaders(args, split):
 
     if args.predict:
         if split in ['train_val', 'validate_val']:
-            sep = sep[1:]
-            sep = sep[len(names_train):] - sep[len(names_train) - 1]
             data = data['val']
             names = names_val
+            sep = [0]
+            for ind in index:
+                if ind['name'] in names_val:
+                    sep.append(ind['end'] - ind['start'] + sep[-1])
+            sep = sep[1:]
         else:
             sep = sep_data
             names = sorted(json.load(open('data/pubs_' + load_split + '.json')).keys())
@@ -267,11 +299,19 @@ def train(args):
     for model_id in args.model_ids:
         if model_id == 'RandomForest':
             models['RandomForest'] = RandomForestClassifier(class_weight='balanced')
-        elif model_id == 'XGB':
-            fixed_params = {'learning_rate': 0.1,
+        elif 'XGB' in model_id:
+            fixed_params = {'max_depth': 5,
+                            'subsample': 1,
+                            'gamma': 0,
+                            'min_child_weight': 2,
+                            'n_estimators': 100,
+                            'learning_rate': 0.1,
                             'scale_pos_weight': 1,
                             'random_state': args.random_state,
                             'n_jobs': 4}
+            if args.model_params is not None:
+                fixed_params.update(json.load(open(args.model_params)))
+            print(fixed_params)
             models['XGB'] = XGBClassifier(**fixed_params)
             # models['XGB'] = XGBClassifier(scale_pos_weight=1)
         else:
