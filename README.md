@@ -165,3 +165,6 @@ https://github.com/glouppe/paper-author-disambiguation
 https://github.com/mozerfazer/AuthorNameDisambiguation
 
 https://github.com/xujunrt/Author-Disambiguation
+
+## DBLP dataset api and preprocessing
+https://github.com/macks22/dblp
