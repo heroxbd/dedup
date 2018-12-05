@@ -141,6 +141,8 @@ http://dpcg.d.airelinux.org:8000/edit/dedup/features/train/label.h5
 如果要查看预测结果中每个结果序号对应的id pairs，可以到features/train/id_pairs下查看。
 
 ### 在validate集上操作
+将validate集分成正负样本比较均衡的train和val：``./sample_seed.py``
+
 训练：``./classifier.py --train_split validate --nb_samples 100000 --retrain``
 
 评价：``./classifier.py --eval --eval_split validate_val``
