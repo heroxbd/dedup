@@ -52,16 +52,29 @@ likelihood <- function(i){
 
 # 此处需要优化成parallel 
 
-likelihood_df$ll_hood <- laply(1:length(result_list), likelihood)
+# likelihood_df$ll_hood <- laply(1:length(result_list), likelihood)
+
+# 改写成二分法，目标是找到第一个差分下降的点，这个点就是我们的最优解
+N <- length(result_list)
+n <- 1
+while(N>n+1){
+        m <- floor((N+n)/2)
+        diff <- likelihood(m) - likelihood(m-1)
+        if(diff>0){
+                n <- m
+        }else(N <- m)
+}
 
 #8:50开始
-pdf(sub('.json', '.pdf', args$opt))
-plot(likelihood_df$ll_hood, type="l", xlab="step", ylab="loglik", 
-     main=sprintf("%s: %s steps", basename(args$opt), length(result_list)))
-dev.off()
+# pdf(sub('.json', '.pdf', args$opt))
+# plot(likelihood_df$ll_hood, type="l", xlab="step", ylab="loglik", 
+#      main=sprintf("%s: %s steps", basename(args$opt), length(result_list)))
+# dev.off()
+# 
+# likelihood_df <- likelihood_df %>% arrange(desc(ll_hood)) 
 
-likelihood_df <- likelihood_df %>% arrange(desc(ll_hood)) 
-opt <- likelihood_df$step[1]
+# opt <- likelihood_df$step[1]
+opt <- n
 node <- unlist((result_list[[opt]]))[seq(1,length(unlist((result_list[[opt]])))-1,2)]
 group <- unlist((result_list[[opt]]))[seq(2,length(unlist((result_list[[opt]]))),2)]
 result <- data.frame(node,group)
@@ -70,6 +83,7 @@ final_result <- list()
 for(l in 1:length(unique(result$group))){
         final_result[[l]] <- result$node[result$group==unique(result$group)[l]]
 }
+
 max <- length(unlist(final_result))
 num <- length(final_result)
 node0 <- unique(c(similarity$node1,similarity$node2))
