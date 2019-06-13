@@ -170,3 +170,7 @@ https://github.com/xujunrt/Author-Disambiguation
 
 ## DBLP dataset api and preprocessing
 https://github.com/macks22/dblp
+
+### 新的数据更新到了达达的服务器
+scad-zbmath-01-limited-access.xml
+
